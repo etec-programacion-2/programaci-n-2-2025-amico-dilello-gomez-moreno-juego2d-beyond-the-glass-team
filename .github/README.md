@@ -15,3 +15,5 @@ La historia sigue a Duodan, un prisionero atrapado por el oscuro y misterioso Da
 - **Nazareno Moreno**
 - **Mateo Gómez** 
 - **Santino Amico**
+
+
