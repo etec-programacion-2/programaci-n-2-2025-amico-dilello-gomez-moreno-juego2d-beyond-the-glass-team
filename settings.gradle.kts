@@ -12,4 +12,4 @@ plugins {
 }
 
 rootProject.name = "programaci-n-2-2025-amico-dilello-gomez-moreno-juego2d-beyond-the-glass-team"
-include("app")
+include("core", "cli", "desktop")
