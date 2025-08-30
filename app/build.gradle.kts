@@ -38,6 +38,11 @@ dependencies {
     
     // KTX bundle esencial
     implementation(libs.bundles.ktx.desktop.core)
+    // libGDX core + backend + natives
+    implementation("com.badlogicgames.gdx:gdx:1.12.1")
+    implementation("com.badlogicgames.gdx:gdx-backend-lwjgl3:1.12.1")
+    runtimeOnly("com.badlogicgames.gdx:gdx-platform:1.12.1:natives-desktop")
+
 }
 
 // Apply a specific Java toolchain to ease working on different environments.
@@ -49,10 +54,16 @@ java {
 
 application {
     // Define the main class for the application.
-    mainClass = "org.example.AppKt"
+    mainClass.set("org.example.DesktopLauncherKt")
 }
+
 
 tasks.named<Test>("test") {
     // Use JUnit Platform for unit tests.
     useJUnitPlatform()
+}
+
+tasks.named<JavaExec>("run") {
+    // Asegura que al ejecutar, se usen los assets
+    workingDir = project.file("assets")
 }
