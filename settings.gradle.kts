@@ -10,5 +10,5 @@ plugins {
     id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
 }
 
-rootProject.name = "programaci-n-2-2025-amico-dilello-gomez-moreno-juego2d-beyond-the-glass-team"
-include("app")
+rootProject.name = "Beyond-the-Glass"
+include("core", "desktop", "cli")
