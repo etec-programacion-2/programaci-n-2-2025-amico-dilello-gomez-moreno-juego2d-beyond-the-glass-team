@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="beyondtheglasslogo.jpeg" width="150"/>
+  <img src="logo\beyondtheglasslogo.jpeg" width="150"/>
 </p>
 <div style="background: rgba(135, 206, 250, 0.2); padding: 20px; text-align: center; border-radius: 15px; backdrop-filter: blur(10px); border: 2px solid rgba(135, 206, 250, 0.6);">
   <h1 style="color: white; font-size: 72px; font-family: 'Arial', sans-serif; text-shadow: 0 0 15px rgba(135, 206, 250, 0.8);">
