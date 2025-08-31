@@ -1,6 +1,6 @@
 plugins {
-    kotlin("jvm") version "1.9.10"
     application
+    kotlin("jvm") version "1.9.10"
 }
 
 java {
@@ -15,7 +15,7 @@ kotlin {
 
 repositories {
     mavenCentral()
-    maven("https://jitpack.io") // necesario para KTX
+    maven("https://jitpack.io") // igual que core
 }
 
 dependencies {
