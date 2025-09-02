@@ -1,5 +1,5 @@
 plugins {
-    kotlin("jvm") version "1.9.10"
+    kotlin("jvm") version "1.9.24"
 }
 
 java {
@@ -14,10 +14,9 @@ kotlin {
 
 repositories {
     mavenCentral()
-    maven("https://jitpack.io") // necesario para KTX
 }
 
 dependencies {
-    implementation("io.github.libktx:ktx-app:1.10.0")
-    implementation("io.github.libktx:ktx-graphics:1.10.0")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
+    testImplementation("org.jetbrains.kotlin:kotlin-test")
 }

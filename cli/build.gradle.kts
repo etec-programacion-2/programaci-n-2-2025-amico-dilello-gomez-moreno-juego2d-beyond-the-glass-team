@@ -1,6 +1,6 @@
 plugins {
     application
-    kotlin("jvm") version "1.9.10"
+    kotlin("jvm") version "1.9.24"
 }
 
 java {
@@ -15,11 +15,11 @@ kotlin {
 
 repositories {
     mavenCentral()
-    maven("https://jitpack.io") // igual que core
 }
 
 dependencies {
     implementation(project(":core"))
+    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
 }
 
 application {

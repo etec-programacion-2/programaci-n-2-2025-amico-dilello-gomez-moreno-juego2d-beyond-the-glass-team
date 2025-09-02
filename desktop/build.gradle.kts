@@ -1,6 +1,6 @@
 plugins {
     application
-    kotlin("jvm") version "1.9.10"
+    kotlin("jvm") version "1.9.24"
 }
 
 java {
@@ -15,21 +15,19 @@ kotlin {
 
 repositories {
     mavenCentral()
-    maven("https://jitpack.io")
 }
+
+val gdxVersion = "1.11.0"
 
 dependencies {
     implementation(project(":core"))
-    implementation("com.badlogicgames.gdx:gdx-backend-lwjgl3:1.10.0")
-    implementation("com.badlogicgames.gdx:gdx-platform:1.10.0:natives-desktop")
-    implementation("io.github.libktx:ktx-app:1.10.0")
-    implementation("io.github.libktx:ktx-graphics:1.10.0")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
+    
+    implementation("com.badlogicgames.gdx:gdx:$gdxVersion")
+    implementation("com.badlogic.gdx:gdx-backend-lwjgl3:$gdxVersion")
+    implementation("com.badlogic.gdx:gdx-platform:$gdxVersion:natives-desktop")
 }
 
 application {
     mainClass.set("org.example.desktop.DesktopLauncherKt")
-}
-
-tasks.named<JavaExec>("run") {
-    workingDir = project.file("assets")
 }
