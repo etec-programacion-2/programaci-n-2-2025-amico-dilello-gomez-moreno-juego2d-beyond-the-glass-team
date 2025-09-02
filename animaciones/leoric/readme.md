@@ -1,0 +1,1 @@
+En esta carpeta van a estar las animaciones de del personaje principal en formato .piskel (herramienta para animar pixelart)
