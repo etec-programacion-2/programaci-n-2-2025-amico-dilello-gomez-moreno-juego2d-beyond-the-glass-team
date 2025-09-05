@@ -22,10 +22,9 @@ val gdxVersion = "1.11.0"
 dependencies {
     implementation(project(":core"))
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
-    
     implementation("com.badlogicgames.gdx:gdx:$gdxVersion")
-    implementation("com.badlogic.gdx:gdx-backend-lwjgl3:$gdxVersion")
-    implementation("com.badlogic.gdx:gdx-platform:$gdxVersion:natives-desktop")
+    implementation("com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdxVersion")    
+    implementation("com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop") 
 }
 
 application {
