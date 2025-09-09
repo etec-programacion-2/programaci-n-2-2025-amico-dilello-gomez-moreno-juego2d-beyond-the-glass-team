@@ -29,3 +29,34 @@ fun main() {
     juego.stopGame()
     println("¡Gracias por jugar!")
 }
+
+//de aca para abajo es lo nuevo
+
+fun main() {
+    // Escenario 1: Juego en la Consola
+    println("Iniciando juego con la interfaz de consola...")
+    val cliRenderService = CLI_RenderService()
+    val cliInputService = object : InputService {
+        // Implementación de InputService para la consola
+        override fun isKeyPressed(keyCode: Int): Boolean = false
+        override fun getMousePosition(): Pair<Float, Float> = Pair(0.0f, 0.0f)
+    }
+    val gameManager = object : GameStateManager {
+        // Implementación de GameStateManager para el ejemplo
+        override fun changeState(newState: GameState) {}
+        override fun update() { println("Actualizando estado del juego...") }
+        override fun render() { println("Renderizando estado del juego...") }
+    }
+    val consoleGame = GameEngine(cliRenderService, cliInputService, gameManager)
+    // consoleGame.run() // Descomentar para ejecutar
+
+    // ---
+
+    // Escenario 2: Juego con JavaFX (conceptual)
+    // Para esto necesitarías una clase principal de JavaFX y el código de configuración.
+    // La idea es que la instanciación sería similar:
+    // val javaFxRenderService = JavaFX_RenderService(graphicsContext)
+    // val javaFxInputService = JavaFX_InputService(...)
+    // val javaFxGame = GameEngine(javaFxRenderService, javaFxInputService, gameManager)
+    // javaFxGame.run() // Descomentar para ejecutar
+}
