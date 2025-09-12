@@ -1,15 +1,8 @@
-// Archivo: RenderService.kt
+package org.example.core
 
+// Define la interfaz para los servicios de renderizado.
+// Esto desacopla la lógica de dibujo de la tecnología de UI.
 interface RenderService {
-    /**
-     * Dibuja un sprite en una posición específica.
-     */
     fun drawSprite(sprite: Any, x: Float, y: Float)
-
-    /**
-     * Renderiza el frame actual.
-     */
     fun render()
-
-    // Puedes añadir más métodos como drawText, drawRectangle, etc.
 }

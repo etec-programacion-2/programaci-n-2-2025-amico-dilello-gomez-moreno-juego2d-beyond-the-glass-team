@@ -1,12 +1,14 @@
-// Archivo: CLI_RenderService.kt
+package org.example.cli
 
+import org.example.core.RenderService
+
+// Implementación de RenderService para la interfaz de línea de comandos.
 class CLI_RenderService : RenderService {
     override fun drawSprite(sprite: Any, x: Float, y: Float) {
-        println("Dibujando sprite $sprite en ($x, $y) en la consola.")
+        println("Dibujando sprite $sprite en la consola.")
     }
 
     override fun render() {
-        // Lógica para limpiar la consola y mostrar el nuevo frame.
         println("--- Renderizando nuevo frame de la consola ---")
     }
 }

@@ -1,31 +1,19 @@
-// Archivo: GameEngine.kt
+package org.example.core
 
+// El motor del juego que une todas las dependencias.
+// Su constructor recibe las interfaces, cumpliendo con la Inversión de Dependencias.
 class GameEngine(
     private val renderService: RenderService,
     private val inputService: InputService,
-    private val gameStateManager: GameStateManager
+    private val gameLogicService: GameLogicService
 ) {
-
-    /**
-     * Bucle principal del juego.
-     * Aquí se manejará la lógica de actualización y renderizado.
-     */
+    // El bucle principal que controla la ejecución del juego.
     fun run() {
-        // Ejemplo de bucle principal
-        while (true) {
-            // 1. Procesar la entrada
-            // Aquí se usaría inputService.isKeyPressed(..) o inputService.getMousePosition()
-            // para responder a las acciones del usuario.
-
-            // 2. Actualizar el estado del juego
-            gameStateManager.update()
-
-            // 3. Renderizar el estado actual
-            gameStateManager.render()
-            renderService.render() // Esto puede ser necesario para renderizar todo el frame
-
-            // Lógica de gestión de tiempo para mantener un framerate constante.
-            // Por ejemplo, Thread.sleep(16) para 60 FPS.
+        while (gameLogicService.isRunning()) {
+            if (inputService.isKeyPressed(com.badlogic.gdx.Input.Keys.ESCAPE)) {
+                gameLogicService.stopGame()
+            }
+            renderService.render()
         }
     }
 }

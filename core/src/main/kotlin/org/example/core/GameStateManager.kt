@@ -1,18 +1,8 @@
-// Archivo: GameStateManager.kt
+package org.example.core
 
+// Define la interfaz para gestionar los estados del juego.
 interface GameStateManager {
-    /**
-     * Cambia el estado actual del juego.
-     */
     fun changeState(newState: GameState)
-
-    /**
-     * Actualiza el estado actual del juego.
-     */
     fun update()
-
-    /**
-     * Dibuja el estado actual del juego.
-     */
     fun render()
 }
