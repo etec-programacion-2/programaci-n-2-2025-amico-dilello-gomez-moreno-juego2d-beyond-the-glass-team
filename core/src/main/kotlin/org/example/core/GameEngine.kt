@@ -1,18 +1,16 @@
 package org.example.core
 
 // El motor del juego que une todas las dependencias.
-// Su constructor recibe las interfaces, cumpliendo con la Inversión de Dependencias.
+// Las propiedades se hacen públicas para que el DesktopGame pueda acceder a ellas directamente.
 class GameEngine(
-    private val renderService: RenderService,
-    private val inputService: InputService,
+    val renderService: RenderService,
+    val inputService: InputService,
     private val gameLogicService: GameLogicService
 ) {
     // El bucle principal que controla la ejecución del juego.
     fun run() {
         while (gameLogicService.isRunning()) {
-            if (inputService.isKeyPressed(com.badlogic.gdx.Input.Keys.ESCAPE)) {
-                gameLogicService.stopGame()
-            }
+            // Se usa el servicio de renderizado para dibujar el estado actual.
             renderService.render()
         }
     }

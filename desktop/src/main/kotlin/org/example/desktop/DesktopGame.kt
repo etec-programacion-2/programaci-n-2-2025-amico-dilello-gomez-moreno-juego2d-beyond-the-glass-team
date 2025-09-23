@@ -11,7 +11,7 @@ import org.example.core.InputService
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.Input
 
-// La clase principal del juego de escritorio, que se ejecuta dentro del bucle de LibGDX.
+// La clase principal del juego de escritorio que se ejecuta dentro del bucle de LibGDX.
 class DesktopGame : ApplicationAdapter() {
     private lateinit var gameEngine: GameEngine
     private lateinit var juego: MiJuego
@@ -35,10 +35,10 @@ class DesktopGame : ApplicationAdapter() {
     // Se llama en cada frame para actualizar y dibujar el juego.
     override fun render() {
         // Se usa el servicio de renderizado del motor para dibujar.
-        val renderService = (gameEngine::class.members.find { it.name == "renderService" }?.call(gameEngine) as? RenderService)
-        renderService?.render()
+        // Ahora se accede directamente a la propiedad renderService del GameEngine,
+        // eliminando la necesidad de reflexión y el error.
+        gameEngine.renderService.render()
 
-        // Se dibuja la información del juego directamente.
         batch.begin()
         font.draw(batch, juego.getGameInfo(), 10f, 550f)
 
