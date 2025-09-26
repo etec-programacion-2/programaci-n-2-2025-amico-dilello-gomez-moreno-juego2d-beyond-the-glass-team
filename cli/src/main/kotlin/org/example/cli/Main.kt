@@ -2,41 +2,41 @@ package org.example.cli
 
 import org.example.core.GameEngine
 import org.example.core.MiJuego
-import org.example.core.RenderService
-import org.example.core.InputService
+
+// ... (Definiciones de CLI_RenderService y CLI_InputService)
 
 /**
  * Función principal para iniciar la aplicación de línea de comandos.
- * Este archivo actúa como el "lanzador" de la aplicación CLI.
  */
 fun main() {
     println("=== BEYOND THE GLASS - CLI ===")
-
-    // Se crean las instancias concretas de los servicios específicos para la CLI.
+    
     val cliRenderService = CLI_RenderService()
     val cliInputService = CLI_InputService()
-
-    // Se crea una instancia de la lógica del juego, que vive en el módulo core.
     val juego = MiJuego()
+    
+    // 1. Crear el gestor de estados para la CLI.
+    val cliGameStateManager = CLI_GameStateManager(cliRenderService)
 
-    // Se inyectan las dependencias (los servicios y la lógica del juego) en el GameEngine.
-    val consoleGame = GameEngine(cliRenderService, cliInputService, juego)
-
+    // 2. Se inyectan las cuatro dependencias en el GameEngine.
+    val consoleGame = GameEngine(cliRenderService, cliInputService, juego, cliGameStateManager)
+    
     // Lógica de inicio y simulación para la CLI.
     println("Ingrese su nombre:")
     val nombre = readLine() ?: "Jugador"
     juego.startGame(nombre)
-
+    
     juego.updateScore(100)
+    
+    // Llamada al bucle central UNA sola vez (un frame) para demostrar la orquestación.
+    // consoleGame.run() causaría un OutOfMemoryError, por lo que usamos updateFrame().
+    consoleGame.updateFrame()
 
-    // La llamada a render() se ejecuta una sola vez para mostrar el estado actual.
-    // No se utiliza el bucle del GameEngine, ya que causaría un ciclo infinito en la CLI.
-    consoleGame.renderService.render()
     println(juego.getGameInfo())
-
+    
     println("Presione Enter para terminar...")
     readLine()
-
+    
     juego.stopGame()
     println("¡Gracias por jugar!")
 }
