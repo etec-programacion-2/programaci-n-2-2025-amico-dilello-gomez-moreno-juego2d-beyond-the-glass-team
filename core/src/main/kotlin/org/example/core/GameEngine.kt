@@ -1,47 +1,29 @@
 package org.example.core
 
 /**
- * El GameEngine es el orquestador central que ejecuta el Game Loop.
- * Ahora inyecta todas las dependencias para gestionar un frame completo.
- * * @property gameStateManager El gestor encargado de la lógica y la renderización por estados.
+ * DIP/OCP: Contiene el bucle principal (Game Loop). Depende de abstracciones (interfaces), 
+ * no de implementaciones concretas (CLI o LibGDX).
  */
 class GameEngine(
-    val renderService: RenderService,
-    val inputService: InputService,
-    private val gameLogicService: GameLogicService,
-    private val gameStateManager: GameStateManager // Nueva dependencia
+    private val renderService: RenderService,
+    private val inputService: InputService,
+    private val juego: MiJuego,
+    private val gameStateManager: GameStateManager
 ) {
-    /**
-     * Ejecuta una sola iteración (frame) del bucle principal del juego.
-     * Este método realiza la secuencia fundamental: PROCESAR -> ACTUALIZAR -> RENDERIZAR.
-     */
-    fun updateFrame() {
-        // 1. PROCESAR ENTRADA (Input) - La entrada puede ser chequeada aquí o dentro del gestor de estados.
-        // Aquí solo orquestamos, el GameStateManager se encargará de actuar sobre la entrada.
-        
-        // 2. ACTUALIZAR ESTADO (Update)
-        // Se llama al gestor de estados para actualizar la física, lógica y reglas del juego.
-        gameStateManager.update() 
-        
-        // 3. RENDERIZAR SALIDA (Render)
-        // Se llama al gestor de estados para dibujar el frame actual.
-        gameStateManager.render()
-    }
     
-    /**
-     * Inicia un bucle continuo que llama a updateFrame(). 
-     * Útil para entornos que no tienen un bucle nativo (como la CLI, aunque se recomienda usar updateFrame() allí).
-     */
-    fun run() {
-        while (gameLogicService.isRunning()) {
-            updateFrame()
-        }
-    }
+    // Almacena el tiempo del último frame para calcular el DeltaTime
+    private var lastFrameTime: Long = 0
 
-    /**
-     * Detiene el bucle de forma controlada a través del GameLogicService.
-     */
-    fun stop() {
-        gameLogicService.stopGame()
+    fun updateFrame() {
+        // Calcular el tiempo transcurrido (DeltaTime) desde el último frame
+        val currentTime = System.nanoTime()
+        val deltaTime = if (lastFrameTime > 0) (currentTime - lastFrameTime) / 1_000_000_000.0f else 0.016f // 60 FPS aprox.
+        lastFrameTime = currentTime
+        
+        // 1. UPDATE: Manda a MiJuego a actualizar su lógica.
+        juego.updateGame(deltaTime, inputService) 
+        
+        // 2. RENDER: Manda al RenderManager a dibujar.
+        gameStateManager.render()
     }
 }

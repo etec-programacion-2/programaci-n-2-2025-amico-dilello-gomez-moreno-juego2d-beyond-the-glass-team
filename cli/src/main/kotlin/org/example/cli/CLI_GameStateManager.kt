@@ -5,8 +5,8 @@ import org.example.core.GameStateManager
 import org.example.core.RenderService
 
 /**
- * Implementación básica de GameStateManager para el entorno de línea de comandos.
- * Se enfoca principalmente en registrar eventos y delegar el renderizado a la CLI.
+ * ADAPTADOR CLI para GameStateManager.
+ * DIP: Implementa la interfaz de GameStateManager.
  */
 class CLI_GameStateManager(
     private val renderService: RenderService
@@ -17,11 +17,11 @@ class CLI_GameStateManager(
     }
     
     override fun update() {
+        // En la CLI, el update real lo hace el GameEngine, esto es solo una traza.
         println("CLI Manager: Lógica de juego actualizada (simulada).")
     }
     
     override fun render() {
-        // Delega la tarea de dibujo al servicio de renderizado de la CLI.
         renderService.render()
     }
 }

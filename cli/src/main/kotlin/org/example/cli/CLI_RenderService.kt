@@ -3,15 +3,16 @@ package org.example.cli
 import org.example.core.RenderService
 
 /**
- * Implementación de RenderService para la interfaz de línea de comandos.
- * Esta clase sabe cómo mostrar información en la consola.
+ * ADAPTADOR CLI para RenderService.
+ * DIP: Implementa la interfaz de RenderService para la consola.
  */
 class CLI_RenderService : RenderService {
     override fun drawSprite(sprite: Any, x: Float, y: Float) {
-        println("Dibujando sprite $sprite en la consola.")
+        // En un entorno de consola, dibujar un sprite es solo una impresión.
     }
-
+    
     override fun render() {
+        // Imprime un separador para simular el cambio de frame.
         println("--- Renderizando nuevo frame de la consola ---")
     }
 }

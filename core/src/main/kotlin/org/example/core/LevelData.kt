@@ -1,8 +1,7 @@
 package org.example.core
 
 /**
- * Contenedor de datos que almacena todas las entidades cargadas de un nivel.
- * Esto representa el estado inicial del mundo de juego.
+ * SRP: Contenedor de datos del estado inicial de un nivel cargado.
  */
 data class LevelData(
     val playerStart: Vector2D,

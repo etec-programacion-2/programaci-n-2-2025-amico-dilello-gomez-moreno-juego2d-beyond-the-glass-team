@@ -1,6 +1,8 @@
 package org.example.core
 
-// Define la interfaz para gestionar los estados del juego.
+/**
+ * DIP: Define la interfaz para controlar el flujo y el estado de la aplicación.
+ */
 interface GameStateManager {
     fun changeState(newState: GameState)
     fun update()

@@ -6,27 +6,25 @@ import org.example.core.RenderService
 import org.example.core.MiJuego
 
 /**
- * Implementación básica de GameStateManager para el entorno de escritorio (LibGDX).
+ * ADAPTADOR LibGDX para GameStateManager.
+ * DIP: Implementa la interfaz de GameStateManager.
  */
 class GdxGameStateManager(
     private val renderService: RenderService,
     private val juego: MiJuego
 ) : GameStateManager {
     
-    private var currentState: GameState = GameState.Menu
-    
     override fun changeState(newState: GameState) {
-        currentState = newState
-        // Lógica de transición de estados
+        // Aquí se implementarían las transiciones entre pantallas (ej. Pausa, Menú).
     }
     
     override fun update() {
-        // Lógica de actualización del estado actual (p. ej., chequear entrada, mover entidades).
+        // En LibGDX, el GameEngine llama a MiJuego.updateGame() directamente.
+        // Este método podría usarse para lógica específica de la plataforma.
     }
     
     override fun render() {
-        // Delega la tarea de dibujo al servicio de renderizado de LibGDX.
+        // Llama al renderizador para dibujar el frame actual.
         renderService.render()
     }
 }
-

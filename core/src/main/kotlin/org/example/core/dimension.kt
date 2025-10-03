@@ -1,10 +1,8 @@
 package org.example.core
 
 /**
- * Define las dos dimensiones del mundo del juego.
- * Dimension A y Dimension B.
+ * SRP: Define las dimensiones de tangibilidad para el mundo de juego.
  */
 enum class Dimension {
-    A,
-    B
+    A, B
 }

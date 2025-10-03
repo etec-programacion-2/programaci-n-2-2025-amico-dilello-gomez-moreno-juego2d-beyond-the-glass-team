@@ -1,9 +1,6 @@
 package org.example.core
 
 /**
- * Representa un vector en un plano 2D.
- * Se utiliza para la posición y la velocidad de las entidades.
- * @property x La coordenada en el eje X.
- * @property y La coordenada en el eje Y.
+ * SRP: Estructura de datos simple para representar posición, tamaño o velocidad en 2D.
  */
 data class Vector2D(var x: Float, var y: Float)
