@@ -1,4 +1,4 @@
-package org.example.desktop
+package org.example.desktop 
 
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration
@@ -7,8 +7,10 @@ import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration
 fun main() {
     val config = Lwjgl3ApplicationConfiguration().apply {
         setTitle("Beyond the Glass")
-        setWindowedMode(800, 600)
+        setWindowedMode(1280, 720) // Establece una resolución inicial por si acaso
+        setMaximized(true)
         useVsync(true)
+        setWindowIcon("logo/beyondtheglasslogo.jpeg")
     }
     // Crea la aplicación de LibGDX, pasándole nuestra clase principal DesktopGame.
     Lwjgl3Application(DesktopGame(), config)
