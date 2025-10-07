@@ -68,7 +68,11 @@ class MainMenuScreen : ScreenAdapter() {
         table.center() // Centra el contenido de la tabla
 
         // Añadir elementos a la tabla (asegúrate de que esto no esté en la línea 45)
-        table.add(logo).pad(10f).row()
+        val dynamicWidth = Gdx.graphics.getWidth() * 0.5f 
+
+        // Usamos expandX() para que centre el logo si no ocupa todo el ancho de la columna.
+        // Si deseas mantener la proporción, solo especifica el ancho (o alto) y usa expandX()
+        table.add(logo).width(dynamicWidth).pad(10f).row()
         table.add(playButton).pad(10f).row()
         table.add(settingsButton).pad(10f).row()
         table.add(exitButton).pad(10f).row()

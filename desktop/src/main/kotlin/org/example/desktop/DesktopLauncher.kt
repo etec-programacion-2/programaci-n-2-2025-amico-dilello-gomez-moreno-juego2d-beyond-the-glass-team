@@ -10,7 +10,7 @@ fun main() {
         setWindowedMode(1280, 720) // Establece una resolución inicial por si acaso
         setMaximized(true)
         useVsync(true)
-        setWindowIcon("logo/beyondtheglasslogo.jpeg")
+        setWindowIcon("assets/window_logo/window_logox128.jpeg", "assets/window_logo/window_logox64.jpeg", "assets/window_logo/window_logox32.jpeg", "assets/window_logo/window_logox16.jpeg")
     }
     // Crea la aplicación de LibGDX, pasándole nuestra clase principal DesktopGame.
     Lwjgl3Application(DesktopGame(), config)
