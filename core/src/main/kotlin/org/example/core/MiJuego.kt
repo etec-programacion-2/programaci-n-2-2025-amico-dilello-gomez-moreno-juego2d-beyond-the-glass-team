@@ -1,6 +1,7 @@
 package org.example.core
 
 import org.example.core.GameState 
+import org.example.core.GameState.*
 import org.example.core.GameLogicService 
 import org.example.core.Player
 import org.example.core.LevelData
@@ -11,7 +12,7 @@ import org.example.core.LevelData
 class MiJuego : GameLogicService { // IMPLEMENTA la interfaz GameLogicService
     
     // 1. EL ESTADO USA EL SEALED CLASS GameState.
-    private var gameState: GameState = GameState.GameOver 
+    private var GameState: GameState = GAMEOVER 
     private var playerName: String = ""
     private var score: Int = 0
     
@@ -26,8 +27,7 @@ class MiJuego : GameLogicService { // IMPLEMENTA la interfaz GameLogicService
     // Implementaciones de GameLogicService
     override fun startGame(playerName: String) {
         this.playerName = playerName
-        // 2. Referencia correcta: GameState.Playing
-        this.gameState = GameState.Playing 
+        this.GameState = PLAYING   
         this.score = 0
         println("Juego iniciado para: $playerName")
     }
@@ -42,8 +42,7 @@ class MiJuego : GameLogicService { // IMPLEMENTA la interfaz GameLogicService
             size = Vector2D(30f, 50f), 
             position = Vector2D(levelData.playerStart.x, levelData.playerStart.y) 
         )
-        // 3. Referencia correcta: GameState.Playing
-        this.gameState = GameState.Playing
+        this.GameState = PLAYING
         println("Nivel cargado e inicializado.")
     }
 
@@ -51,8 +50,7 @@ class MiJuego : GameLogicService { // IMPLEMENTA la interfaz GameLogicService
      * MÉTODO CLAVE: Contiene la lógica principal del juego.
      */
     fun updateGame(deltaTime: Float, inputService: InputService) {
-        // 4. Referencia correcta: GameState.Playing
-        if (gameState != GameState.Playing) return
+        if (GameState != PLAYING) return
         if (!::player.isInitialized || !::currentLevel.isInitialized) return
 
         // 1. INPUT
@@ -70,17 +68,15 @@ class MiJuego : GameLogicService { // IMPLEMENTA la interfaz GameLogicService
         val playerInfo = if (::player.isInitialized) 
             "| Pos: (${player.position.x.toInt()}, ${player.position.y.toInt()}) | Suelo: ${if(player.isOnGround) "SÍ" else "NO"}" 
         else ""
-        return "Jugador: $playerName | Estado: $gameState | Puntuación: $score $playerInfo"
+        return "Jugador: $playerName | Estado: $GameState | Puntuación: $score $playerInfo"
     }
     
     override fun stopGame() {
-        // 5. Referencia correcta: GameState.GameOver
-        gameState = GameState.GameOver
+        GameState = GAMEOVER
         println("Juego detenido. Puntuación final: $score")
     }
     
-    // 6. Referencia correcta: GameState.Playing
-    override fun isRunning(): Boolean = gameState == GameState.Playing
+    override fun isRunning(): Boolean = GameState == PLAYING
     override fun getScore(): Int = score
     fun getPlayer(): Player? = if (::player.isInitialized) player else null
 }

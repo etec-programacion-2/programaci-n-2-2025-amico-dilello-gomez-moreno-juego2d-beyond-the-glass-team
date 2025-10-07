@@ -1,8 +1,11 @@
 package org.example.core
 
 /**
- * SRP: Define los estados en los que puede encontrarse el juego.
+ * Define los posibles estados del juego de forma simple.
  */
 enum class GameState {
-    RUNNING, STOPPED, PAUSED
+    MENU,
+    PLAYING,
+    PAUSED,
+    GAMEOVER
 }
