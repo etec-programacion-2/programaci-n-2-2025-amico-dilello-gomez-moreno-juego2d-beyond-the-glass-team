@@ -12,15 +12,23 @@ class CLI_GameStateManager(
         println("CLI Manager: Nuevo estado solicitado -> $newState")
     }
     
+        private var movingRight = true
+
     override fun update() {
-        // Lógica de movimiento simulado para demostrar que el loop funciona y se redibuja
-        if (worldState.player.position.x < 150.0f) {
-            worldState.player.position.x += 10.0f // Movimiento notable
+        // Lógica de movimiento de ida y vuelta
+        if (movingRight) {
+            if (worldState.player.position.x < 150.0f) {
+                worldState.player.position.x += 10.0f
+            } else {
+                movingRight = false // Cambia de dirección
+            }
         } else {
-            // Simulación de cambio de dimensión
-            worldState.player.currentDimension = Dimension.B 
+            if (worldState.player.position.x > 100.0f) {
+                worldState.player.position.x -= 10.0f
+            } else {
+                movingRight = true // Cambia de dirección
+            }
         }
-    }
     
     override fun render() {
         // Llama al método avanzado con el estado del mundo

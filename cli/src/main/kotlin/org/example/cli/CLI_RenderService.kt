@@ -7,10 +7,14 @@ class CLI_RenderService : RenderService {
     // --- Configuración de la Ventana de Consola ---
     private val GRID_WIDTH = 80
     private val GRID_HEIGHT = 25
-    private val WORLD_TO_GRID_SCALE = 2.0f 
+    private val WORLD_TO_GRID_SCALE = 10.0f // Ajustado para que el movimiento sea más visible
 
+    /**
+     * Faltaba definir bien el clean()
+     * Dibuja el estado actual del mundo en la consola.
+     */
     override fun renderWorld(worldState: WorldState) {
-        // Criterio de Aceptación: La pantalla se limpia.
+        // Criterio de Aceptación: La pantalla se limpia ANTES de redibujar.
         clearScreen()
 
         val grid = Array(GRID_HEIGHT) { CharArray(GRID_WIDTH) { ' ' } }
@@ -18,10 +22,14 @@ class CLI_RenderService : RenderService {
 
         // Dibujar Plataformas (#: tangible, ~: intangible)
         worldState.platforms.forEach { platform ->
-            val (col, row) = mapWorldToGrid(platform.position.x, platform.position.y)
-            if (isValid(col, row)) {
-                // Usa '#' o '~' según la dimensión para cumplir el criterio
-                grid[row][col] = if (platform.tangibleInDimension == currentDim) '#' else '~'
+            // Se dibuja la plataforma completa, no solo su punto de inicio
+            val (startCol, startRow) = mapWorldToGrid(platform.position.x, platform.position.y)
+            val platformGridWidth = (platform.size.x / WORLD_TO_GRID_SCALE).toInt()
+            for (i in 0 until platformGridWidth) {
+                val col = startCol + i
+                if (isValid(col, startRow)) {
+                    grid[startRow][col] = if (platform.tangibleInDimension == currentDim) '#' else '~'
+                }
             }
         }
 
@@ -29,43 +37,55 @@ class CLI_RenderService : RenderService {
         worldState.enemies.forEach { enemy ->
             val (col, row) = mapWorldToGrid(enemy.position.x, enemy.position.y)
             if (isValid(col, row)) {
-                grid[row][col] = 'E' 
+                grid[row][col] = 'E'
             }
         }
-        
-        // Dibujar Jugador (P) - Prioridad alta
+
+        // Dibujar Jugador (P) - Se dibuja al final para que siempre sea visible
         val (playerCol, playerRow) = mapWorldToGrid(worldState.player.position.x, worldState.player.position.y)
         if (isValid(playerCol, playerRow)) {
-            grid[playerRow][playerCol] = 'P' 
+            grid[playerRow][playerCol] = 'P'
         }
 
-        // Imprimir la matriz
+        // Imprimir la matriz completa a la consola
         grid.forEach { row ->
             println(row.joinToString(""))
         }
-        
-        // Imprimir información de estado
+
+        // Imprimir información de estado debajo del juego
         println("Dimensión: $currentDim | Jugador @ (${worldState.player.position.x.toInt()}, ${worldState.player.position.y.toInt()})")
     }
-    
-    // Métodos de la interfaz no usados en la CLI
-    override fun drawSprite(sprite: Any, x: Float, y: Float) { /* No usado */ }
-    override fun render() { /* No usado */ }
 
-    // Métodos Auxiliares
+    // --- MÉTODOS AUXILIARES ---
+
+    /**
+     * ¡LA FUNCIÓN QUE FALTABA!
+     * Limpia la consola usando secuencias de escape ANSI.
+     * Funciona en la mayoría de terminales modernas (Linux, macOS, Windows Terminal).
+     */
+    private fun clearScreen() {
+    repeat(50) {
+        println()
+    }
+
+    /**
+     * Mapea coordenadas del mundo a la grilla de la consola.
+     */
     private fun mapWorldToGrid(worldX: Float, worldY: Float): Pair<Int, Int> {
         val col = (worldX / WORLD_TO_GRID_SCALE).toInt()
-        val row = GRID_HEIGHT - 1 - (worldY / WORLD_TO_GRID_SCALE).toInt() 
-        return Pair(col.coerceIn(0, GRID_WIDTH - 1), row.coerceIn(0, GRID_HEIGHT - 1))
+        // Invierte el eje Y para que (0,0) esté abajo a la izquierda en el mundo del juego
+        val row = GRID_HEIGHT - 1 - (worldY / WORLD_TO_GRID_SCALE).toInt()
+        return Pair(col, row)
     }
-    
+
+    /**
+     * Verifica si una coordenada de la grilla está dentro de los límites.
+     */
     private fun isValid(col: Int, row: Int): Boolean {
         return col in 0 until GRID_WIDTH && row in 0 until GRID_HEIGHT
     }
-    
-    // Función para limpiar la pantalla (necesaria para el redibujado en cada fotograma)
-    private fun clearScreen() {
-        val ESC = '\u001b'
-        print("${ESC}[H${ESC}[2J") 
-    }
+
+    // --- Métodos de la interfaz no utilizados en esta implementación ---
+    override fun drawSprite(sprite: Any, x: Float, y: Float) { /* No implementado */ }
+    override fun render() { /* No implementado */ }
 }
