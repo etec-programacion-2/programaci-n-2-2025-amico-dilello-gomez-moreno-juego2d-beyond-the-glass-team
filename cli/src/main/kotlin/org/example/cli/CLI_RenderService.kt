@@ -1,17 +1,73 @@
 package org.example.cli
 
-import org.example.core.RenderService
+import org.example.core.*
 
-/**
- * Implementación de RenderService para la interfaz de línea de comandos.
- * Esta clase sabe cómo mostrar información en la consola.
- */
 class CLI_RenderService : RenderService {
-    override fun drawSprite(sprite: Any, x: Float, y: Float) {
-        println("Dibujando sprite $sprite en la consola.")
+
+    // --- Configuración de la Ventana de Consola ---
+    private val GRID_WIDTH = 80
+    private val GRID_HEIGHT = 25
+    private val WORLD_TO_GRID_SCALE = 10.0f
+
+    override fun renderWorld(worldState: WorldState) {
+        // Criterio de Aceptación: La pantalla se limpia ANTES de redibujar.
+        clearScreen()
+
+        val grid = Array(GRID_HEIGHT) { CharArray(GRID_WIDTH) { ' ' } }
+        val currentDim = worldState.currentDimension
+
+        // Dibujar Plataformas
+        worldState.platforms.forEach { platform ->
+            val (startCol, startRow) = mapWorldToGrid(platform.position.x, platform.position.y)
+            val platformGridWidth = (platform.size.x / WORLD_TO_GRID_SCALE).toInt().coerceAtLeast(1)
+            for (i in 0 until platformGridWidth) {
+                val col = startCol + i
+                if (isValid(col, startRow)) {
+                    grid[startRow][col] = if (platform.tangibleInDimension == currentDim) '#' else '~'
+                }
+            }
+        }
+
+        // Dibujar Enemigos
+        worldState.enemies.forEach { enemy ->
+            val (col, row) = mapWorldToGrid(enemy.position.x, enemy.position.y)
+            if (isValid(col, row)) {
+                grid[row][col] = 'E'
+            }
+        }
+
+        // Dibujar Jugador
+        val (playerCol, playerRow) = mapWorldToGrid(worldState.player.position.x, worldState.player.position.y)
+        if (isValid(playerCol, playerRow)) {
+            grid[playerRow][playerCol] = 'P'
+        }
+
+        // Imprimir todo
+        grid.forEach { row ->
+            println(row.joinToString(""))
+        }
+        println("Dimensión: $currentDim | Jugador @ (${worldState.player.position.x.toInt()}, ${worldState.player.position.y.toInt()})")
     }
 
-    override fun render() {
-        println("--- Renderizando nuevo frame de la consola ---")
+    // --- MÉTODOS AUXILIARES ---
+
+    private fun clearScreen() {
+        // ESTA ES LA FORMA CORRECTA: Usa códigos de escape ANSI para borrar la terminal.
+        print("\u001B[H\u001B[2J")
+        System.out.flush()
     }
+
+    private fun mapWorldToGrid(worldX: Float, worldY: Float): Pair<Int, Int> {
+        val col = (worldX / WORLD_TO_GRID_SCALE).toInt()
+        val row = GRID_HEIGHT - 1 - (worldY / WORLD_TO_GRID_SCALE).toInt()
+        return Pair(col, row)
+    }
+
+    private fun isValid(col: Int, row: Int): Boolean {
+        return col in 0 until GRID_WIDTH && row in 0 until GRID_HEIGHT
+    }
+
+    // --- Métodos de la interfaz no utilizados ---
+    override fun drawSprite(sprite: Any, x: Float, y: Float) { /* No implementado */ }
+    override fun render() { /* No implementado */ }
 }

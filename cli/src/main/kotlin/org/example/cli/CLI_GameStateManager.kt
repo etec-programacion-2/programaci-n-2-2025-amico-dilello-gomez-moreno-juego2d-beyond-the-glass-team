@@ -1,27 +1,40 @@
 package org.example.cli
 
-import org.example.core.GameState
-import org.example.core.GameStateManager
-import org.example.core.RenderService
+import org.example.core.*
 
-/**
- * Implementación básica de GameStateManager para el entorno de línea de comandos.
- * Se enfoca principalmente en registrar eventos y delegar el renderizado a la CLI.
- */
 class CLI_GameStateManager(
-    private val renderService: RenderService
+    private val renderService: RenderService,
+    private var worldState: WorldState
 ) : GameStateManager {
-    
+
     override fun changeState(newState: GameState) {
-        println("CLI Manager: Nuevo estado -> $newState")
+        println("CLI Manager: Nuevo estado solicitado -> $newState")
     }
-    
+
+    private var movingRight = true
+
     override fun update() {
-        println("CLI Manager: Lógica de juego actualizada (simulada).")
+        // Lógica de movimiento de ida y vuelta para una simulación visible
+        if (movingRight) {
+            if (worldState.player.position.x < 150.0f) {
+                worldState.player.position.x += 10.0f
+            } else {
+                movingRight = false // Al llegar al final, cambia de dirección
+            }
+        } else {
+            if (worldState.player.position.x > 100.0f) {
+                worldState.player.position.x -= 10.0f
+            } else {
+                movingRight = true // Al llegar al principio, cambia de dirección
+            }
+        }
     }
-    
+
     override fun render() {
-        // Delega la tarea de dibujo al servicio de renderizado de la CLI.
-        renderService.render()
+        renderService.renderWorld(worldState)
+    }
+
+    fun setWorldState(initialState: WorldState) {
+        this.worldState = initialState
     }
 }

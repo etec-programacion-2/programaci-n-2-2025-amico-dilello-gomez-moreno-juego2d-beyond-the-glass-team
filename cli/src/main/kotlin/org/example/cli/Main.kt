@@ -1,64 +1,63 @@
 package org.example.cli
 
-import org.example.core.GameEngine
-import org.example.core.MiJuego
-import org.example.core.LevelLoader
-import org.example.core.LevelData
-// ... (imports y definiciones de CLI_RenderService, CLI_InputService, CLI_GameStateManager) ...
+import org.example.core.*
+import java.lang.Thread.sleep
 
-// ... (Definiciones de CLI_RenderService, CLI_InputService, CLI_GameStateManager) ...
-
-/**
- * Función principal para iniciar la aplicación de línea de comandos.
- */
 fun main() {
     println("=== BEYOND THE GLASS - CLI ===")
 
-    // --- DEMOSTRACIÓN DE CARGA DE NIVEL (BLOQUE DE PRUEBA) ---
-    println("\n--- DEMOSTRACIÓN DE CARGA DE NIVEL ---")
+    // --- Carga de Nivel ---
     val levelLoader = LevelLoader()
-    var levelData: LevelData? = null
-    
-    try {
-        // Carga el archivo de nivel.
-        levelData = levelLoader.loadLevel("level1.txt")
-        
-        // --- CÓDIGO DE IMPRESIÓN REINSERTADO ---
-        println("Nivel cargado con éxito. Resumen de entidades:")
-        println(" -> Jugador comienza en: ${levelData.playerStart}")
-        println(" -> Total de plataformas: ${levelData.platforms.size}")
-        println("    - P1 Dimensión: ${levelData.platforms[0].tangibleInDimension}")
-        println(" -> Total de enemigos: ${levelData.enemies.size}")
-        println(" -> Total de coleccionables: ${levelData.collectibles.size}")
-        // ----------------------------------------
-        
+    val levelData = try {
+        levelLoader.loadLevel("level1.txt").also {
+            println("Nivel cargado con éxito. Resumen de entidades:")
+            println(" -> Jugador comienza en: ${it.playerStart}")
+            println(" -> Total de plataformas: ${it.platforms.size}")
+            println("    - P1 Dimensión: ${it.platforms.firstOrNull()?.tangibleInDimension}")
+            println(" -> Total de enemigos: ${it.enemies.size}")
+            println(" -> Total de coleccionables: ${it.collectibles.size}")
+        }
     } catch (e: Exception) {
         println("FATAL ERROR: No se pudo cargar el nivel.")
         e.printStackTrace()
-        return // Sale del main si hay un error
+        return
     }
-    // --------------------------------------------------------
 
-    // Lógica de juego (solo si la carga fue exitosa)
+    // 1. CREAR EL ESTADO INICIAL DEL MUNDO
+    val initialPlayer = Player(
+        position = levelData.playerStart.copy(),
+        size = Vector2D(2.0f, 2.0f),
+        currentDimension = Dimension.A
+    )
+    val initialWorldState = WorldState(
+        player = initialPlayer,
+        platforms = levelData.platforms,
+        enemies = levelData.enemies,
+        collectibles = levelData.collectibles,
+        currentDimension = Dimension.A
+    )
+
+    // 2. Inicializar servicios y GameStateManager
     val cliRenderService = CLI_RenderService()
     val cliInputService = CLI_InputService()
     val juego = MiJuego()
-    val cliGameStateManager = CLI_GameStateManager(cliRenderService)
+    val cliGameStateManager = CLI_GameStateManager(cliRenderService, initialWorldState)
+
+    // 3. Inicializar el GameEngine
     val consoleGame = GameEngine(cliRenderService, cliInputService, juego, cliGameStateManager)
-    
+
     println("\nIniciando simulación de juego...")
     println("Ingrese su nombre:")
     val nombre = readLine() ?: "Jugador"
     juego.startGame(nombre)
-    juego.updateScore(100)
-    
-    consoleGame.updateFrame()
 
-    println(juego.getGameInfo())
-    
-    println("Presione Enter para terminar...")
-    readLine()
-    
-    juego.stopGame()
-    println("¡Gracias por jugar!")
+    // 4. EL VERDADERO GAME LOOP INFINITO
+    println("¡Simulación iniciada! La animación se repetirá sin parar.")
+    println("===> Presiona Ctrl+C en la terminal para detener el juego. <===")
+    sleep(2000) // Una pausa para que puedas leer el mensaje
+
+    while (true) {
+        consoleGame.updateFrame()
+        sleep(150) // Pausa de 150ms para que la animación sea fluida
+    }
 }
