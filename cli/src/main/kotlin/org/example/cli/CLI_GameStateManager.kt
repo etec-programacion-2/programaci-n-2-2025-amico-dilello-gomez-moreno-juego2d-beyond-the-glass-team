@@ -8,12 +8,15 @@ import org.example.core.InputService
 /**
  * Implementación básica de GameStateManager para el entorno de línea de comandos.
  */
+import org.example.core.*
+
 class CLI_GameStateManager(
-    private val renderService: RenderService
+    private val renderService: RenderService,
+    private var worldState: WorldState
 ) : GameStateManager {
-    
+
     override fun changeState(newState: GameState) {
-        println("CLI Manager: Nuevo estado -> $newState")
+        println("CLI Manager: Nuevo estado solicitado -> $newState")
     }
     
     /**
@@ -22,10 +25,31 @@ class CLI_GameStateManager(
      */
     override fun update(inputService: InputService, deltaTime: Float) {
         println("CLI Manager: Lógica de juego actualizada (simulada). DeltaTime: $deltaTime")
+
+    private var movingRight = true
+
+    override fun update() {
+        // Lógica de movimiento de ida y vuelta para una simulación visible
+        if (movingRight) {
+            if (worldState.player.position.x < 150.0f) {
+                worldState.player.position.x += 10.0f
+            } else {
+                movingRight = false // Al llegar al final, cambia de dirección
+            }
+        } else {
+            if (worldState.player.position.x > 100.0f) {
+                worldState.player.position.x -= 10.0f
+            } else {
+                movingRight = true // Al llegar al principio, cambia de dirección
+            }
+        }
     }
-    
+
     override fun render() {
-        // Delega la tarea de dibujo al servicio de renderizado de la CLI.
-        renderService.render()
+        renderService.renderWorld(worldState)
+    }
+
+    fun setWorldState(initialState: WorldState) {
+        this.worldState = initialState
     }
 }
