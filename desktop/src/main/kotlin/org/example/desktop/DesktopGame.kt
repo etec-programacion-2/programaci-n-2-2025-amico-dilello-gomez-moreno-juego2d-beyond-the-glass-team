@@ -5,58 +5,59 @@ import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.Input
 import com.badlogic.gdx.graphics.g2d.BitmapFont
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
-
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer // Importar ShapeRenderer
 import org.example.core.GameEngine
+import org.example.core.LevelLoader
 import org.example.core.MiJuego
 
-/**
- * La clase principal del juego de escritorio, extiende de ApplicationAdapter de LibGDX.
- * Este archivo solo contiene el punto de entrada y la lógica del bucle principal de LibGDX.
- */
 class DesktopGame : ApplicationAdapter() {
     private lateinit var gameEngine: GameEngine
     private lateinit var juego: MiJuego
     private lateinit var batch: SpriteBatch
     private lateinit var font: BitmapFont
-    
-    // Se llama una vez al inicio del juego para inicializar recursos.
+    private lateinit var shapeRenderer: ShapeRenderer // Nuevo
+
     override fun create() {
         batch = SpriteBatch()
         font = BitmapFont()
-        
-        // **IMPORTANTE:** Aquí solo se instancian, NO se definen las clases de servicio.
-        val renderService = GdxRenderService(batch, font)
+        shapeRenderer = ShapeRenderer() // Inicializarlo
+
+        val renderService = GdxRenderService(shapeRenderer) // Pasarlo al servicio
         val inputService = GdxInputService()
         juego = MiJuego()
-        
-        // Se crea el gestor de estados.
+
+        // Cargar el nivel
+        try {
+            val levelLoader = LevelLoader()
+            val levelData = levelLoader.loadLevel("level1.txt")
+            juego.loadLevel(levelData)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Gdx.app.exit() // Salir si el nivel no carga
+        }
+
         val gameStateManager = GdxGameStateManager(renderService, juego)
         
-        // Se inyectan las cuatro dependencias en el motor del juego.
         gameEngine = GameEngine(renderService, inputService, juego, gameStateManager)
         juego.startGame("Jugador Desktop")
     }
 
-    // Se llama en cada frame (LibGDX Game Loop).
     override fun render() {
-        // El bucle de LibGDX llama a este método, que a su vez llama a la orquestación del motor.
         gameEngine.updateFrame()
 
-        // Lógica de salida específica de LibGDX (debe ir aquí).
         if (Gdx.input.isKeyPressed(Input.Keys.ESCAPE)) {
             Gdx.app.exit()
         }
         
-        // Dibuja la puntuación del juego sobre el renderizado del GameState
+        // Dibuja la puntuación sobre el renderizado del juego
         batch.begin()
-        font.draw(batch, juego.getGameInfo(), 10f, 550f)
+        font.draw(batch, juego.getGameInfo(), 10f, Gdx.graphics.height - 20f)
         batch.end()
     }
     
-    // Se llama cuando el juego se cierra para liberar recursos.
     override fun dispose() {
         batch.dispose()
         font.dispose()
-        gameEngine.stop()
+        shapeRenderer.dispose() // Liberar el recurso
     }
 }
