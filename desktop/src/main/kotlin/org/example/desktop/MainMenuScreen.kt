@@ -37,6 +37,11 @@ class MainMenuScreen : ScreenAdapter() {
         settingsButton.addListener(object : ClickListener() {
             override fun clicked(event: InputEvent, x: Float, y: Float) {
                 println("Ajustes Presionado - Cambiando a SettingsScreen...")
+                val game = Gdx.app.applicationListener as Game
+                
+                // 3. Llama a setScreen() para cambiar a la pantalla de ajustes
+                // NOTA: Debes reemplazar 'SettingsScreen()' con el nombre real de tu clase de ajustes.
+                game.setScreen(SettingsScreenMainMenu(game)) 
             }
         })
 
@@ -55,45 +60,54 @@ class MainMenuScreen : ScreenAdapter() {
 
         // Configuración de la Tabla (Table) para organizar los botones
         val table = Table()
-        table.setFillParent(true) // Ocupa toda la pantalla
-        
-        // --- PARÁMETROS DE TAMAÑO Y POSICIÓN ---
-        val LOGO_WIDTH = 900f     // Ancho fijo para el logo 
-        val LOGO_HEIGHT = 600f    // Alto fijo para el logo
-        val TOP_OFFSET_PAD = 10f  // Espacio del borde superior. Lo hemos bajado para subir el logo.
-        
-        val BUTTON_WIDTH = 400f   // Ancho de los botones laterales (Jugar)
-        val BUTTON_HEIGHT = 100f  // Alto de los botones laterales
-        
-        val EXIT_BUTTON_WIDTH = BUTTON_WIDTH * 2 + 30f // Para hacer más ancho el botón "Salir"
+                table.setFillParent(true) 
+                
+                // --- PARÁMETROS DE TAMAÑO Y POSICIÓN ---
+                val LOGO_WIDTH = 900f     
+                val LOGO_HEIGHT = 600f    
+                val TOP_OFFSET_PAD = 10f  // Ajustado para acercar el logo al borde superior
+                
+                val BUTTON_WIDTH = 400f   
+                val BUTTON_HEIGHT = 100f  
+                val EXIT_BUTTON_WIDTH = BUTTON_WIDTH * 2 + 30f
         // ---------------------------------------
 
-        // ==============================================
-        // FILA 1: LOGO (OCUPA 2 COLUMNAS)
-        // ==============================================
+        // Desactivamos defaults para que no estire las celdas automáticamente
+        table.defaults().reset() 
+
+        // FILA 1: LOGO
         table.add(logo)
             .width(LOGO_WIDTH)
             .height(LOGO_HEIGHT)
             .padTop(TOP_OFFSET_PAD) 
-            .padBottom(5f)         
-            .colspan(2) // Permite que el logo se centre sobre las 2 columnas siguientes
+            .padTop(40f)
+            .colspan(2) 
             .row()
 
         // ==============================================
-        // FILA 2: BOTONES DE ACCIÓN (JUGAR Y AJUSTES) EN LA MISMA FILA
+        // FILA 2: TABLA ANIDADA (JUGAR Y AJUSTES) - SOLUCIÓN DE CERCANÍA
         // ==============================================
-        // Asegurándonos de que las columnas no se estiren más de lo necesario
-        table.defaults().pad(5f).expandX().fillX()
+        val actionButtonsTable = Table()
 
-        table.add(playButton)
+        // Botón Jugar (Columna 1 de la tabla interna)
+        actionButtonsTable.add(playButton)
             .width(BUTTON_WIDTH)
             .height(BUTTON_HEIGHT)
-            .padRight(10f) // Separa 10px a la derecha del botón "Jugar"
+            .padRight(5f)
+            .padLeft(157f)
+
+        // Botón Ajustes (Columna 2 de la tabla interna)
+        actionButtonsTable.add(settingsButton)
+            .width(BUTTON_WIDTH)
+            .height(BUTTON_HEIGHT)
+            .padLeft(-217f) // Separación de 5px a la izquierda
+            .padRight(100f)
+            .row()
         
-        table.add(settingsButton)
-            .width(BUTTON_WIDTH)
-            .height(BUTTON_HEIGHT)
-            .padLeft(10f)  // Separa 10px a la izquierda del botón "Ajustes"
+        // Insertamos la tabla anidada en la tabla principal
+        // Esto centra el grupo Jugar/Ajustes como una única unidad.
+        table.add(actionButtonsTable)
+            .colspan(2)
             .row()
 
         // ==============================================
@@ -102,13 +116,12 @@ class MainMenuScreen : ScreenAdapter() {
         table.add(exitButton)
             .width(EXIT_BUTTON_WIDTH)
             .height(BUTTON_HEIGHT)
-            .padTop(10f) // Separación de los botones superiores
-            .colspan(2)  // El botón "Salir" ocupa el ancho completo
+            .padTop(20f) // Más separación del bloque superior
+            .padBottom(230f) // Esto empuja todo el contenido hacia arriba
+            .colspan(2)
             .row()
 
-        // ==============================================
-        // FILA 4: CELDA DE EXPANSIÓN
-        // ==============================================
+        // FILA 4: CELDA DE EXPANSIÓN (Mantiene el contenido agrupado en la parte superior)
         table.add().expandY().colspan(2).row()
         
         stage.addActor(table)
