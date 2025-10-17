@@ -1,12 +1,11 @@
 package org.example.core
 
-// Define el contrato para la lógica central del juego.
-// El motor del juego dependerá solo de esta abstracción.
 interface GameLogicService {
-    fun startGame(playerName: String)
-    fun updateScore(points: Int)
+    fun loadLevel(levelName: String)
+    fun update(action: GameAction, deltaTime: Float)
+    fun getPlayer(): Player
+    fun getLevelData(): LevelData?
+    // Método que añadieron tus compañeros
     fun getGameInfo(): String
-    fun stopGame()
-    fun isRunning(): Boolean
-    fun getScore(): Int
 }
+

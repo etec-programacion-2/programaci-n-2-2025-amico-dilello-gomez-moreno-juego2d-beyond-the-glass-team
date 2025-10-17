@@ -1,74 +1,42 @@
 package org.example.cli
 
-import org.example.core.*
+import org.example.core.Dimension
+import org.example.core.RenderService
+import org.example.core.WorldState
 
 class CLI_RenderService : RenderService {
 
-    private val GRID_WIDTH = 80
-    private val GRID_HEIGHT = 25
-    private val WORLD_TO_GRID_SCALE = 10.0f
-
+    // MÉTODO CENTRAL ACTUALIZADO: Dibuja el estado del mundo en la consola.
     override fun renderWorld(worldState: WorldState) {
-        // Criterio de Aceptación: La pantalla se limpia ANTES de redibujar.
-        clearScreen()
+        val width = 50
+        val height = 20
+        val grid = Array(height) { CharArray(width) { ' ' } }
 
-        val grid = Array(GRID_HEIGHT) { CharArray(GRID_WIDTH) { ' ' } }
-        val currentDim = worldState.currentDimension
-
-        // Dibujar Plataformas
+        // Dibuja las plataformas
         worldState.platforms.forEach { platform ->
-            val (startCol, startRow) = mapWorldToGrid(platform.position.x, platform.position.y)
-            val platformGridWidth = (platform.size.x / WORLD_TO_GRID_SCALE).toInt().coerceAtLeast(1)
-            for (i in 0 until platformGridWidth) {
-                val col = startCol + i
-                if (isValid(col, startRow)) {
-                    grid[startRow][col] = if (platform.tangibleInDimension == currentDim) '#' else '~'
+            val char = if (platform.tangibleInDimension == worldState.currentDimension) '#' else '.'
+            for (y in platform.position.y.toInt().coerceIn(0, height - 1) until (platform.position.y + platform.size.y).toInt().coerceIn(0, height - 1)) {
+                for (x in platform.position.x.toInt().coerceIn(0, width - 1) until (platform.position.x + platform.size.x).toInt().coerceIn(0, width - 1)) {
+                    if (x < width && y < height) grid[y][x] = char
                 }
             }
         }
 
-        // Dibujar Enemigos
-        worldState.enemies.forEach { enemy ->
-            val (col, row) = mapWorldToGrid(enemy.position.x, enemy.position.y)
-            if (isValid(col, row)) {
-                grid[row][col] = 'E'
-            }
-        }
+        // Dibuja al jugador
+        val player = worldState.player
+        val pX = player.position.x.toInt().coerceIn(0, width - 1)
+        val pY = player.position.y.toInt().coerceIn(0, height - 1)
+        if (pX < width && pY < height) grid[pY][pX] = 'P'
 
-        // Dibujar Jugador
-        val (playerCol, playerRow) = mapWorldToGrid(worldState.player.position.x, worldState.player.position.y)
-        if (isValid(playerCol, playerRow)) {
-            grid[playerRow][playerCol] = 'P'
+        // Imprime el grid en la consola
+        println("\u001b[H\u001b[2J") // Limpia la consola
+        println("--- BEYOND THE GLASS (CLI) --- Dimensión: ${worldState.currentDimension} ---")
+        for (i in grid.indices.reversed()) {
+            println(grid[i].joinToString(""))
         }
-
-        // Imprimir la matriz y la información
-        grid.forEach { row ->
-            println(row.joinToString(""))
-        }
-        println("Dimensión: $currentDim | Jugador @ (${worldState.player.position.x.toInt()}, ${worldState.player.position.y.toInt()})")
+        println("Controles: A (Izquierda), D (Derecha), W/Espacio (Saltar), S (Cambiar Dimensión), Q (Salir)")
     }
 
-    /**
-     * ¡VERSIÓN RESTAURADA QUE SÍ FUNCIONA!
-     * Limpia la consola imprimiendo suficientes líneas en blanco.
-     */
-    private fun clearScreen() {
-        repeat(50) {
-            println()
-        }
-    }
-
-    private fun mapWorldToGrid(worldX: Float, worldY: Float): Pair<Int, Int> {
-        val col = (worldX / WORLD_TO_GRID_SCALE).toInt()
-        val row = GRID_HEIGHT - 1 - (worldY / WORLD_TO_GRID_SCALE).toInt()
-        return Pair(col, row)
-    }
-
-    private fun isValid(col: Int, row: Int): Boolean {
-        return col in 0 until GRID_WIDTH && row in 0 until GRID_HEIGHT
-    }
-
-    // Métodos de la interfaz no utilizados
-    override fun drawSprite(sprite: Any, x: Float, y: Float) { /* No implementado */ }
-    override fun render() { /* No implementado */ }
+    override fun drawSprite(sprite: Any, x: Float, y: Float) {}
+    override fun render() {}
 }

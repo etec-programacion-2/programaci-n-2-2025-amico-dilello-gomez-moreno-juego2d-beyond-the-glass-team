@@ -1,47 +1,23 @@
 package org.example.core
 
 /**
- * El GameEngine es el orquestador central que ejecuta el Game Loop.
- * Ahora inyecta todas las dependencias para gestionar un frame completo.
- * * @property gameStateManager El gestor encargado de la lógica y la renderización por estados.
+ * El GameEngine es el orquestador central que agrupa los servicios del juego.
+ * En la nueva arquitectura, ya no es responsable de mantener el bucle de juego,
+ * esa responsabilidad recae en la plataforma (ej: DesktopGame).
  */
 class GameEngine(
+    // Mantiene las referencias a los servicios para que puedan ser accedidos.
     val renderService: RenderService,
     val inputService: InputService,
     private val gameLogicService: GameLogicService,
-    private val gameStateManager: GameStateManager // Nueva dependencia
+    private val gameStateManager: GameStateManager
 ) {
-    /**
-     * Ejecuta una sola iteración (frame) del bucle principal del juego.
-     * Este método realiza la secuencia fundamental: PROCESAR -> ACTUALIZAR -> RENDERIZAR.
-     */
-    fun updateFrame() {
-        // 1. PROCESAR ENTRADA (Input) - La entrada puede ser chequeada aquí o dentro del gestor de estados.
-        // Aquí solo orquestamos, el GameStateManager se encargará de actuar sobre la entrada.
-        
-        // 2. ACTUALIZAR ESTADO (Update)
-        // Se llama al gestor de estados para actualizar la física, lógica y reglas del juego.
-        gameStateManager.update() 
-        
-        // 3. RENDERIZAR SALIDA (Render)
-        // Se llama al gestor de estados para dibujar el frame actual.
-        gameStateManager.render()
-    }
-    
-    /**
-     * Inicia un bucle continuo que llama a updateFrame(). 
-     * Útil para entornos que no tienen un bucle nativo (como la CLI, aunque se recomienda usar updateFrame() allí).
-     */
-    fun run() {
-        while (gameLogicService.isRunning()) {
-            updateFrame()
-        }
-    }
-
-    /**
-     * Detiene el bucle de forma controlada a través del GameLogicService.
-     */
-    fun stop() {
-        gameLogicService.stopGame()
-    }
+    // Los métodos run(), stop() y updateFrame() han sido eliminados
+    // porque ya no son necesarios. El bucle de juego ahora es
+    // manejado directamente por la implementación de la plataforma,
+    // como se ve en 'DesktopGame.kt', que llama a los servicios
+    // directamente en su propio método render().
+    //
+    // Esta clase se mantiene por si en el futuro se quiere añadir lógica
+    // que sea común a todas las plataformas.
 }

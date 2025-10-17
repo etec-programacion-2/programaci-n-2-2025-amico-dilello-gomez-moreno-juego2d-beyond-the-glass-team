@@ -3,60 +3,62 @@ package org.example.desktop
 import com.badlogic.gdx.ApplicationAdapter
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.Input
-import com.badlogic.gdx.graphics.g2d.BitmapFont
-import com.badlogic.gdx.graphics.g2d.SpriteBatch
-
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import org.example.core.GameEngine
 import org.example.core.MiJuego
 
 /**
- * La clase principal del juego de escritorio, extiende de ApplicationAdapter de LibGDX.
- * Este archivo solo contiene el punto de entrada y la lógica del bucle principal de LibGDX.
+ * La clase principal del juego de escritorio, ahora adaptada a la nueva arquitectura.
  */
 class DesktopGame : ApplicationAdapter() {
-    private lateinit var gameEngine: GameEngine
+    // CAMBIO: Ya no necesitamos un GameEngine complejo aquí, la lógica está en MiJuego.
     private lateinit var juego: MiJuego
-    private lateinit var batch: SpriteBatch
-    private lateinit var font: BitmapFont
+    private lateinit var renderService: GdxRenderService
+    private lateinit var inputService: GdxInputService
     
-    // Se llama una vez al inicio del juego para inicializar recursos.
+    // CAMBIO: Usamos ShapeRenderer en lugar de SpriteBatch.
+    private lateinit var shapeRenderer: ShapeRenderer
+
     override fun create() {
-        batch = SpriteBatch()
-        font = BitmapFont()
+        // Inicializamos los componentes nuevos.
+        shapeRenderer = ShapeRenderer()
         
-        // **IMPORTANTE:** Aquí solo se instancian, NO se definen las clases de servicio.
-        val renderService = GdxRenderService(batch, font)
-        val inputService = GdxInputService()
-        juego = MiJuego()
+        // Creamos las implementaciones de los servicios para desktop.
+        renderService = GdxRenderService(shapeRenderer)
+        inputService = GdxInputService()
+        juego = MiJuego() // Nuestra lógica principal del juego.
+
+        // Cargamos el nivel al iniciar.
+        juego.loadLevel("level1.txt")
         
-        // Se crea el gestor de estados.
-        val gameStateManager = GdxGameStateManager(renderService, juego)
-        
-        // Se inyectan las cuatro dependencias en el motor del juego.
-        gameEngine = GameEngine(renderService, inputService, juego, gameStateManager)
-        juego.startGame("Jugador Desktop")
+        // Iniciamos el servicio de input si es necesario (según la nueva interfaz).
+        inputService.start()
     }
 
-    // Se llama en cada frame (LibGDX Game Loop).
     override fun render() {
-        // El bucle de LibGDX llama a este método, que a su vez llama a la orquestación del motor.
-        gameEngine.updateFrame()
+        // Este es el nuevo bucle de juego, más limpio.
+        
+        // 1. OBTENER ENTRADA
+        val action = inputService.getAction()
 
-        // Lógica de salida específica de LibGDX (debe ir aquí).
+        // 2. ACTUALIZAR LÓGICA
+        // Pasamos la acción y el tiempo delta a la lógica del juego.
+        juego.update(action, Gdx.graphics.deltaTime)
+
+        // 3. RENDERIZAR ESTADO
+        // Obtenemos el estado actual del mundo y se lo pasamos al servicio de renderizado.
+        val worldState = juego.getWorldState()
+        renderService.renderWorld(worldState)
+
+        // Lógica de salida del juego.
         if (Gdx.input.isKeyPressed(Input.Keys.ESCAPE)) {
             Gdx.app.exit()
         }
-        
-        // Dibuja la puntuación del juego sobre el renderizado del GameState
-        batch.begin()
-        font.draw(batch, juego.getGameInfo(), 10f, 550f)
-        batch.end()
     }
-    
-    // Se llama cuando el juego se cierra para liberar recursos.
+
     override fun dispose() {
-        batch.dispose()
-        font.dispose()
-        gameEngine.stop()
+        // Liberamos los recursos.
+        shapeRenderer.dispose()
+        inputService.stop()
     }
 }

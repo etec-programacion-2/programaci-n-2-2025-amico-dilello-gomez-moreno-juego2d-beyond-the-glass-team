@@ -1,32 +1,53 @@
 package org.example.core
 
-// La implementación concreta de la lógica del juego.
 class MiJuego : GameLogicService {
-    private var gameState: String = "STOPPED"
-    private var playerName: String = ""
-    private var score: Int = 0
 
-    override fun startGame(playerName: String) {
-        this.playerName = playerName
-        this.gameState = "RUNNING"
-        this.score = 0
-        println("Juego iniciado para: $playerName")
+    private var player: Player = Player(position = Vector2D(0f, 0f), size = Vector2D(32f, 64f))
+    private var levelData: LevelData? = null
+    private val physicsService: PhysicsService = PhysicsService()
+    
+    // El estado de la dimensión ahora se gestiona aquí
+    private var currentDimension: Dimension = Dimension.A
+
+    override fun loadLevel(levelName: String) {
+        val loader = LevelLoader()
+        levelData = loader.loadLevel(levelName)
+        player.position = levelData!!.playerStart.copy()
     }
 
-    override fun updateScore(points: Int) {
-        score += points
+    override fun update(action: GameAction, deltaTime: Float) {
+        val currentLevel = levelData ?: return
+
+        when (action) {
+            GameAction.MOVE_LEFT -> player.velocity.x = -Player.MOVE_SPEED
+            GameAction.MOVE_RIGHT -> player.velocity.x = Player.MOVE_SPEED
+            GameAction.JUMP -> if (player.isOnGround) {
+                player.velocity.y = Player.JUMP_STRENGTH
+                player.isOnGround = false
+            }
+            GameAction.SWITCH_DIMENSION -> {
+                // Futura lógica de cambio de dimensión
+            }
+            GameAction.NONE -> player.velocity.x = 0f
+        }
+        
+        physicsService.update(player, currentLevel.platforms, currentDimension, deltaTime)
     }
 
+    fun getWorldState(): WorldState {
+        return WorldState(
+            player = this.player,
+            platforms = levelData?.platforms ?: emptyList(),
+            enemies = levelData?.enemies ?: emptyList(),
+            collectibles = levelData?.collectibles ?: emptyList(),
+            currentDimension = this.currentDimension
+        )
+    }
+
+    override fun getPlayer(): Player = player
+    override fun getLevelData(): LevelData? = levelData
     override fun getGameInfo(): String {
-        return "Jugador: $playerName | Estado: $gameState | Puntuación: $score"
+        // Implementación simple para cumplir el contrato
+        return "Player X: ${player.position.x.toInt()} | Player Y: ${player.position.y.toInt()}"
     }
-
-    override fun stopGame() {
-        gameState = "STOPPED"
-        println("Juego detenido. Puntuación final: $score")
-    }
-
-    override fun isRunning(): Boolean = gameState == "RUNNING"
-
-    override fun getScore(): Int = score
 }
