@@ -2,8 +2,10 @@ package org.example.cli
 
 import org.example.core.*
 
+// CAMBIO CLAVE: El constructor ahora también pide el 'inputService'.
 class CLI_GameStateManager(
     private val renderService: RenderService,
+    private val inputService: InputService,
     private var worldState: WorldState
 ) : GameStateManager {
 
@@ -11,21 +13,34 @@ class CLI_GameStateManager(
         println("CLI Manager: Nuevo estado solicitado -> $newState")
     }
 
-    private var movingRight = true
-
     override fun update() {
-        // Lógica de movimiento de ida y vuelta para una simulación visible
-        if (movingRight) {
-            if (worldState.player.position.x < 150.0f) {
-                worldState.player.position.x += 10.0f
-            } else {
-                movingRight = false // Al llegar al final, cambia de dirección
+        // Esta lógica ahora funcionará porque sí recibe las teclas.
+        val action = inputService.getAction()
+
+        worldState = when (action) {
+            GameAction.MOVE_LEFT -> {
+                val newPlayer = worldState.player.copy(
+                    position = worldState.player.position.copy(x = worldState.player.position.x - 10.0f)
+                )
+                worldState.copy(player = newPlayer)
             }
-        } else {
-            if (worldState.player.position.x > 100.0f) {
-                worldState.player.position.x -= 10.0f
-            } else {
-                movingRight = true // Al llegar al principio, cambia de dirección
+            GameAction.MOVE_RIGHT -> {
+                val newPlayer = worldState.player.copy(
+                    position = worldState.player.position.copy(x = worldState.player.position.x + 10.0f)
+                )
+                worldState.copy(player = newPlayer)
+            }
+            GameAction.JUMP -> {
+                println("¡Acción de SALTO recibida!") // Mapeado a 'w'
+                worldState
+            }
+            GameAction.SWITCH_DIMENSION -> {
+                // Mapeado a 's' (shift).
+                val newDimension = if (worldState.currentDimension == Dimension.A) Dimension.B else Dimension.A
+                worldState.copy(currentDimension = newDimension)
+            }
+            GameAction.NONE -> {
+                worldState
             }
         }
     }

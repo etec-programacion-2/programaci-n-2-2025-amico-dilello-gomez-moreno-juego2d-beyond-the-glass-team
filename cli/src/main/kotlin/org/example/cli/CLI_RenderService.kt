@@ -4,7 +4,6 @@ import org.example.core.*
 
 class CLI_RenderService : RenderService {
 
-    // --- Configuración de la Ventana de Consola ---
     private val GRID_WIDTH = 80
     private val GRID_HEIGHT = 25
     private val WORLD_TO_GRID_SCALE = 10.0f
@@ -42,19 +41,21 @@ class CLI_RenderService : RenderService {
             grid[playerRow][playerCol] = 'P'
         }
 
-        // Imprimir todo
+        // Imprimir la matriz y la información
         grid.forEach { row ->
             println(row.joinToString(""))
         }
         println("Dimensión: $currentDim | Jugador @ (${worldState.player.position.x.toInt()}, ${worldState.player.position.y.toInt()})")
     }
 
-    // --- MÉTODOS AUXILIARES ---
-
+    /**
+     * ¡VERSIÓN RESTAURADA QUE SÍ FUNCIONA!
+     * Limpia la consola imprimiendo suficientes líneas en blanco.
+     */
     private fun clearScreen() {
-        // ESTA ES LA FORMA CORRECTA: Usa códigos de escape ANSI para borrar la terminal.
-        print("\u001B[H\u001B[2J")
-        System.out.flush()
+        repeat(50) {
+            println()
+        }
     }
 
     private fun mapWorldToGrid(worldX: Float, worldY: Float): Pair<Int, Int> {
@@ -67,7 +68,7 @@ class CLI_RenderService : RenderService {
         return col in 0 until GRID_WIDTH && row in 0 until GRID_HEIGHT
     }
 
-    // --- Métodos de la interfaz no utilizados ---
+    // Métodos de la interfaz no utilizados
     override fun drawSprite(sprite: Any, x: Float, y: Float) { /* No implementado */ }
     override fun render() { /* No implementado */ }
 }

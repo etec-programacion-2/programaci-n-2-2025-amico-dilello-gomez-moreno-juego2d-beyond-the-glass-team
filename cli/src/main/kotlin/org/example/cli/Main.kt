@@ -6,58 +6,47 @@ import java.lang.Thread.sleep
 fun main() {
     println("=== BEYOND THE GLASS - CLI ===")
 
-    // --- Carga de Nivel ---
     val levelLoader = LevelLoader()
     val levelData = try {
-        levelLoader.loadLevel("level1.txt").also {
-            println("Nivel cargado con éxito. Resumen de entidades:")
-            println(" -> Jugador comienza en: ${it.playerStart}")
-            println(" -> Total de plataformas: ${it.platforms.size}")
-            println("    - P1 Dimensión: ${it.platforms.firstOrNull()?.tangibleInDimension}")
-            println(" -> Total de enemigos: ${it.enemies.size}")
-            println(" -> Total de coleccionables: ${it.collectibles.size}")
-        }
+        levelLoader.loadLevel("level1.txt")
     } catch (e: Exception) {
         println("FATAL ERROR: No se pudo cargar el nivel.")
         e.printStackTrace()
         return
     }
 
-    // 1. CREAR EL ESTADO INICIAL DEL MUNDO
-    val initialPlayer = Player(
-        position = levelData.playerStart.copy(),
-        size = Vector2D(2.0f, 2.0f),
-        currentDimension = Dimension.A
-    )
     val initialWorldState = WorldState(
-        player = initialPlayer,
+        player = Player(position = levelData.playerStart.copy(), size = Vector2D(2.0f, 2.0f), currentDimension = Dimension.A),
         platforms = levelData.platforms,
         enemies = levelData.enemies,
         collectibles = levelData.collectibles,
         currentDimension = Dimension.A
     )
 
-    // 2. Inicializar servicios y GameStateManager
     val cliRenderService = CLI_RenderService()
     val cliInputService = CLI_InputService()
     val juego = MiJuego()
-    val cliGameStateManager = CLI_GameStateManager(cliRenderService, initialWorldState)
 
-    // 3. Inicializar el GameEngine
+    // ¡AQUÍ ESTÁ LA CONEXIÓN QUE FALTABA!
+    // Ahora le pasamos el 'cliInputService' al constructor.
+    val cliGameStateManager = CLI_GameStateManager(cliRenderService, cliInputService, initialWorldState)
+
     val consoleGame = GameEngine(cliRenderService, cliInputService, juego, cliGameStateManager)
 
-    println("\nIniciando simulación de juego...")
-    println("Ingrese su nombre:")
-    val nombre = readLine() ?: "Jugador"
-    juego.startGame(nombre)
+    // Iniciamos el hilo que escucha el teclado en segundo plano.
+    cliInputService.start()
 
-    // 4. EL VERDADERO GAME LOOP INFINITO
-    println("¡Simulación iniciada! La animación se repetirá sin parar.")
+    println("\n¡El juego ha comenzado! Usa 'a', 'd', 'w', 's' y presiona Enter.")
     println("===> Presiona Ctrl+C en la terminal para detener el juego. <===")
-    sleep(2000) // Una pausa para que puedas leer el mensaje
+    sleep(1000)
 
-    while (true) {
-        consoleGame.updateFrame()
-        sleep(150) // Pausa de 150ms para que la animación sea fluida
+    try {
+        while (true) {
+            consoleGame.updateFrame()
+            sleep(50)
+        }
+    } finally {
+        cliInputService.stop()
+        println("\nJuego detenido.")
     }
 }
