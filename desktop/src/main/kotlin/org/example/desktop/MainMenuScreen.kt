@@ -31,6 +31,11 @@ class MainMenuScreen : ScreenAdapter() {
         playButton.addListener(object : ClickListener() {
             override fun clicked(event: InputEvent, x: Float, y: Float) {
                 println("Jugar Presionado - Cambiando a GameScreen...")
+                val game = Gdx.app.applicationListener as Game
+                
+                // 2. Llama a setScreen() para cambiar a la pantalla del juego
+                // NOTA: Debes reemplazar 'GameScreen()' con el nombre real de tu clase de juego.
+                game.setScreen(DesktopGame())
             }
         })
         
