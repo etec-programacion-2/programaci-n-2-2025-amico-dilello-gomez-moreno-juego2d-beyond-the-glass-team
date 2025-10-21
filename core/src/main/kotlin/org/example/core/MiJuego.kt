@@ -5,8 +5,6 @@ class MiJuego : GameLogicService {
     private var player: Player = Player(position = Vector2D(0f, 0f), size = Vector2D(32f, 64f))
     private var levelData: LevelData? = null
     private val physicsService: PhysicsService = PhysicsService()
-    
-    // El estado de la dimensión ahora se gestiona aquí
     private var currentDimension: Dimension = Dimension.A
 
     override fun loadLevel(levelName: String) {
@@ -18,6 +16,7 @@ class MiJuego : GameLogicService {
     override fun update(action: GameAction, deltaTime: Float) {
         val currentLevel = levelData ?: return
 
+        // El 'when' ahora cubre TODOS los casos del enum GameAction
         when (action) {
             GameAction.MOVE_LEFT -> player.velocity.x = -Player.MOVE_SPEED
             GameAction.MOVE_RIGHT -> player.velocity.x = Player.MOVE_SPEED
@@ -28,6 +27,9 @@ class MiJuego : GameLogicService {
             GameAction.SWITCH_DIMENSION -> {
                 // Futura lógica de cambio de dimensión
             }
+            // --- CASO AÑADIDO ---
+            // Le decimos al compilador que sabemos de QUIT, pero no hacemos nada aquí.
+            GameAction.QUIT -> { /* La lógica de salida se maneja en la plataforma (cli/desktop) */ }
             GameAction.NONE -> player.velocity.x = 0f
         }
         
@@ -47,7 +49,6 @@ class MiJuego : GameLogicService {
     override fun getPlayer(): Player = player
     override fun getLevelData(): LevelData? = levelData
     override fun getGameInfo(): String {
-        // Implementación simple para cumplir el contrato
         return "Player X: ${player.position.x.toInt()} | Player Y: ${player.position.y.toInt()}"
     }
 }
