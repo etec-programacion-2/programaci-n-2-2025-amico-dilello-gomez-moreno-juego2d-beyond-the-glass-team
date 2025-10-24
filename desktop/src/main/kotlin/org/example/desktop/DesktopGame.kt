@@ -3,25 +3,24 @@ package org.example.desktop
 import com.badlogic.gdx.ApplicationAdapter
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.Input
+import com.badlogic.gdx.graphics.g2d.BitmapFont
+import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import org.example.core.MiJuego
 
-/**
- * La clase principal del juego de escritorio. Ahora es la única responsable
- * de orquestar el bucle de juego, sin intermediarios.
- */
 class DesktopGame : ApplicationAdapter() {
-    // Ya no hay referencias a GameEngine o GameStateManager
-
     private lateinit var juego: MiJuego
     private lateinit var renderService: GdxRenderService
     private lateinit var inputService: GdxInputService
     private lateinit var shapeRenderer: ShapeRenderer
+    private lateinit var batch: SpriteBatch
+    private lateinit var font: BitmapFont
 
     override fun create() {
         shapeRenderer = ShapeRenderer()
-        
-        // Creamos los servicios y la lógica directamente
+        batch = SpriteBatch()
+        font = BitmapFont()
+
         renderService = GdxRenderService(shapeRenderer)
         inputService = GdxInputService()
         juego = MiJuego()
@@ -31,19 +30,21 @@ class DesktopGame : ApplicationAdapter() {
     }
 
     override fun render() {
-        // El bucle de juego es ahora directo y limpio:
+        // Llama a getActions() que devuelve un Set
+        val actions = inputService.getActions()
         
-        // 1. INPUT
-        val action = inputService.getAction()
+        // Pasa el Set a la lógica del juego
+        juego.update(actions, Gdx.graphics.deltaTime)
         
-        // 2. UPDATE
-        juego.update(action, Gdx.graphics.deltaTime)
-        
-        // 3. RENDER
         val worldState = juego.getWorldState()
+        
         renderService.renderWorld(worldState)
 
-        // Salida
+        batch.begin()
+        font.draw(batch, "Dimensión Actual: ${worldState.currentDimension}", 10f, 580f)
+        font.draw(batch, juego.getGameInfo(), 10f, 560f)
+        batch.end()
+
         if (Gdx.input.isKeyPressed(Input.Keys.ESCAPE)) {
             Gdx.app.exit()
         }
@@ -52,5 +53,7 @@ class DesktopGame : ApplicationAdapter() {
     override fun dispose() {
         shapeRenderer.dispose()
         inputService.stop()
+        batch.dispose()
+        font.dispose()
     }
 }
