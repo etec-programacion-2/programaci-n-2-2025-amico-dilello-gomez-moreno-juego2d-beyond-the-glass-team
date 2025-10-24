@@ -1,77 +1,54 @@
 package org.example.core
 
-// La implementación concreta de la lógica del juego.
 class MiJuego : GameLogicService {
-    private var gameState: String = "STOPPED"
-    private var playerName: String = ""
-    private var score: Int = 0
 
-    // Estado del mundo del juego
-    private var player: Player? = null
+    private var player: Player = Player(position = Vector2D(0f, 0f), size = Vector2D(32f, 64f))
     private var levelData: LevelData? = null
     private val physicsService: PhysicsService = PhysicsService()
+    private var currentDimension: Dimension = Dimension.A
 
-    override fun startGame(playerName: String) {
-        this.playerName = playerName
-        this.gameState = "RUNNING"
-        this.score = 0
+    override fun loadLevel(levelName: String) {
+        val loader = LevelLoader()
+        levelData = loader.loadLevel(levelName)
+        player.position = levelData!!.playerStart.copy()
     }
 
-    // CORREGIDO: Se añade 'override'
-    override fun loadLevel(data: LevelData) {
-        this.levelData = data
-        this.player = Player(
-            position = data.playerStart.copy(),
-            size = Vector2D(32f, 64f),
-            currentDimension = Dimension.A
+    override fun update(action: GameAction, deltaTime: Float) {
+        val currentLevel = levelData ?: return
+
+        // El 'when' ahora cubre TODOS los casos del enum GameAction
+        when (action) {
+            GameAction.MOVE_LEFT -> player.velocity.x = -Player.MOVE_SPEED
+            GameAction.MOVE_RIGHT -> player.velocity.x = Player.MOVE_SPEED
+            GameAction.JUMP -> if (player.isOnGround) {
+                player.velocity.y = Player.JUMP_STRENGTH
+                player.isOnGround = false
+            }
+            GameAction.SWITCH_DIMENSION -> {
+                // Futura lógica de cambio de dimensión
+            }
+            // --- CASO AÑADIDO ---
+            // Le decimos al compilador que sabemos de QUIT, pero no hacemos nada aquí.
+            GameAction.QUIT -> { /* La lógica de salida se maneja en la plataforma (cli/desktop) */ }
+            GameAction.NONE -> player.velocity.x = 0f
+        }
+        
+        physicsService.update(player, currentLevel.platforms, currentDimension, deltaTime)
+    }
+
+    fun getWorldState(): WorldState {
+        return WorldState(
+            player = this.player,
+            platforms = levelData?.platforms ?: emptyList(),
+            enemies = levelData?.enemies ?: emptyList(),
+            collectibles = levelData?.collectibles ?: emptyList(),
+            currentDimension = this.currentDimension
         )
     }
-    
-    // CORREGIDO: Se añade 'override'
-    override fun update(inputService: InputService, deltaTime: Float) {
-        if (gameState != "RUNNING" || player == null || levelData == null) return
 
-        player?.let { p ->
-            p.velocity.x = 0f
-            if (inputService.isActionPressed(PlayerAction.MOVE_LEFT) || inputService.isActionPressed(PlayerAction.MOVE_LEFT_ALT)) {
-                p.velocity.x = -Player.MOVE_SPEED
-            }
-            if (inputService.isActionPressed(PlayerAction.MOVE_RIGHT) || inputService.isActionPressed(PlayerAction.MOVE_RIGHT_ALT)) {
-                p.velocity.x = Player.MOVE_SPEED
-            }
-
-            if (p.isOnGround && (inputService.isActionPressed(PlayerAction.JUMP) || inputService.isActionPressed(PlayerAction.JUMP_ALT))) {
-                p.velocity.y = Player.JUMP_FORCE
-                p.isOnGround = false
-            }
-        }
-
-        player?.let { p ->
-            levelData?.platforms?.let { platforms ->
-                physicsService.update(p, platforms, deltaTime)
-            }
-        }
-    }
-
-    override fun updateScore(points: Int) {
-        score += points
-    }
-
-    override fun getGameInfo(): String {
-        return "Jugador: $playerName | Estado: $gameState | Puntuación: $score"
-    }
-
-    override fun stopGame() {
-        gameState = "STOPPED"
-    }
-
-    override fun isRunning(): Boolean = gameState == "RUNNING"
-    override fun getScore(): Int = score
-
-    // CORREGIDO: Se añade 'override'
-    override fun getPlayer(): Player? = player
-    
-    // CORREGIDO: Se añade 'override'
+    override fun getPlayer(): Player = player
     override fun getLevelData(): LevelData? = levelData
+    override fun getGameInfo(): String {
+        return "Player X: ${player.position.x.toInt()} | Player Y: ${player.position.y.toInt()}"
+    }
 }
-

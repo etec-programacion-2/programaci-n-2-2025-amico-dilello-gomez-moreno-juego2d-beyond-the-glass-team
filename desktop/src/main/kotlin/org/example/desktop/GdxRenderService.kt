@@ -4,30 +4,26 @@ import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
-import org.example.core.*
+import org.example.core.RenderService
+import org.example.core.WorldState
 
-// Implementación de RenderService mejorada que usa un ShapeRenderer.
-class GdxRenderService(
-    private val shapeRenderer: ShapeRenderer
-) : RenderService {
+// Implementación de RenderService para el entorno de escritorio con LibGDX.
+class GdxRenderService(private val shapeRenderer: ShapeRenderer) : RenderService {
 
-    // Este método ahora está obsoleto para nuestro propósito actual.
-    override fun drawSprite(sprite: Any, x: Float, y: Float) {
-        // Lógica futura para dibujar sprites (imágenes).
-    }
-
-    // Nuevo método para renderizar el estado completo del juego.
-    fun renderGameState(player: Player?, levelData: LevelData?) {
-        // 1. Limpiar la pantalla
-        Gdx.gl.glClearColor(0.15f, 0.15f, 0.2f, 1f)
+    // MÉTODO CENTRAL ACTUALIZADO PARA CUMPLIR CON LA NUEVA INTERFAZ
+    override fun renderWorld(worldState: WorldState) {
+        // Limpia la pantalla
+        Gdx.gl.glClearColor(0.1f, 0.1f, 0.15f, 1f)
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT)
 
-        // 2. Dibujar con el ShapeRenderer
+        // Prepara el ShapeRenderer para dibujar formas rellenas
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled)
 
-        // Dibujar plataformas
-        levelData?.platforms?.forEach { platform ->
-            if (player != null && platform.tangibleInDimension == player.currentDimension) {
+        // Dibuja las plataformas
+        worldState.platforms.forEach { platform ->
+            // Si la plataforma es tangible en la dimensión actual, se dibuja azul.
+            // Si no, se dibuja gris oscuro para indicar que no es sólida.
+            if (platform.tangibleInDimension == worldState.currentDimension) {
                 shapeRenderer.color = Color.ROYAL
             } else {
                 shapeRenderer.color = Color.DARK_GRAY
@@ -35,18 +31,21 @@ class GdxRenderService(
             shapeRenderer.rect(platform.position.x, platform.position.y, platform.size.x, platform.size.y)
         }
 
-        // Dibujar jugador
-        player?.let {
-            shapeRenderer.color = Color.GREEN
-            shapeRenderer.rect(it.position.x, it.position.y, it.size.x, it.size.y)
-        }
+        // Dibuja al jugador de color verde
+        val player = worldState.player
+        shapeRenderer.color = Color.GREEN
+        shapeRenderer.rect(player.position.x, player.position.y, player.size.x, player.size.y)
 
+        // Termina el dibujado
         shapeRenderer.end()
     }
 
-    // El método render original de la interfaz ahora está vacío,
-    // ya que la lógica principal de renderizado está en renderGameState.
+    // Los métodos antiguos se mantienen por ahora para cumplir el contrato, aunque renderWorld es el principal.
+    override fun drawSprite(sprite: Any, x: Float, y: Float) {
+        // Lógica futura para dibujar sprites (imágenes)
+    }
+
     override fun render() {
-        // La limpieza y el dibujado se manejan en renderGameState.
+        // Este método podría usarse para dibujar elementos de UI que no están en el WorldState.
     }
 }

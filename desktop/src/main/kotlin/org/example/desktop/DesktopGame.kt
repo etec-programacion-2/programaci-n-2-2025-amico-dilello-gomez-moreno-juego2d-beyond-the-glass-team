@@ -3,61 +3,47 @@ package org.example.desktop
 import com.badlogic.gdx.ApplicationAdapter
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.Input
-import com.badlogic.gdx.graphics.g2d.BitmapFont
-import com.badlogic.gdx.graphics.g2d.SpriteBatch
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer // Importar ShapeRenderer
-import org.example.core.GameEngine
-import org.example.core.LevelLoader
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import org.example.core.MiJuego
 
+/**
+ * La clase principal del juego de escritorio. Ahora es la única responsable
+ * de orquestar el bucle de juego, sin intermediarios.
+ */
 class DesktopGame : ApplicationAdapter() {
-    private lateinit var gameEngine: GameEngine
+    // ELIMINADO: Ya no se necesita una referencia a GameEngine.
+
+    // Las referencias a los servicios y la lógica se mantienen.
     private lateinit var juego: MiJuego
-    private lateinit var batch: SpriteBatch
-    private lateinit var font: BitmapFont
-    private lateinit var shapeRenderer: ShapeRenderer // Nuevo
+    private lateinit var renderService: GdxRenderService
+    private lateinit var inputService: GdxInputService
+    private lateinit var shapeRenderer: ShapeRenderer
 
     override fun create() {
-        batch = SpriteBatch()
-        font = BitmapFont()
-        shapeRenderer = ShapeRenderer() // Inicializarlo
-
-        val renderService = GdxRenderService(shapeRenderer) // Pasarlo al servicio
-        val inputService = GdxInputService()
+        shapeRenderer = ShapeRenderer()
+        
+        renderService = GdxRenderService(shapeRenderer)
+        inputService = GdxInputService()
         juego = MiJuego()
 
-        // Cargar el nivel
-        try {
-            val levelLoader = LevelLoader()
-            val levelData = levelLoader.loadLevel("level1.txt")
-            juego.loadLevel(levelData)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            Gdx.app.exit() // Salir si el nivel no carga
-        }
-
-        val gameStateManager = GdxGameStateManager(renderService, juego)
-        
-        gameEngine = GameEngine(renderService, inputService, juego, gameStateManager)
-        juego.startGame("Jugador Desktop")
+        juego.loadLevel("level1.txt")
+        inputService.start()
     }
 
     override fun render() {
-        gameEngine.updateFrame()
+        // El bucle de juego es ahora más directo:
+        val action = inputService.getAction()
+        juego.update(action, Gdx.graphics.deltaTime)
+        val worldState = juego.getWorldState()
+        renderService.renderWorld(worldState)
 
         if (Gdx.input.isKeyPressed(Input.Keys.ESCAPE)) {
             Gdx.app.exit()
         }
-        
-        // Dibuja la puntuación sobre el renderizado del juego
-        batch.begin()
-        font.draw(batch, juego.getGameInfo(), 10f, Gdx.graphics.height - 20f)
-        batch.end()
     }
-    
+
     override fun dispose() {
-        batch.dispose()
-        font.dispose()
-        shapeRenderer.dispose() // Liberar el recurso
+        shapeRenderer.dispose()
+        inputService.stop()
     }
 }
