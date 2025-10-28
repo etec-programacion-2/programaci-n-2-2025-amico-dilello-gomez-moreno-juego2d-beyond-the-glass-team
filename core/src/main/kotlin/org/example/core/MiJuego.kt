@@ -5,23 +5,57 @@ class MiJuego : GameLogicService {
     private var player: Player = Player(position = Vector2D(0f, 0f), size = Vector2D(32f, 64f))
     private var levelData: LevelData? = null
     private val physicsService: PhysicsService = PhysicsService()
-    
     private val enemyPhysicsService: EnemyPhysicsService = EnemyPhysicsService()
+
+    // --- LÓGICA BTG-012 ---
+    private val combatService: CombatService = CombatService()
+    // CORRECCIÓN: Usar el objeto de la sealed class
+    private var gameState: GameState = GameState.Playing 
+    private var lives: Int = 3
+    private var invincibilityTimer: Float = 0f
+    // --------------------
     
     private var currentDimension: Dimension = Dimension.A
     private var switchKeyWasPressed = false
+    private var originalPlayerStart: Vector2D = Vector2D(0f, 0f)
 
     override fun loadLevel(levelName: String) {
         val loader = LevelLoader()
         levelData = loader.loadLevel(levelName)
-        player.position = levelData!!.playerStart.copy()
+        originalPlayerStart = levelData!!.playerStart.copy()
+        resetPlayerPosition()
+    }
+
+    private fun resetPlayerPosition() {
+        player.position = originalPlayerStart.copy()
+        player.velocity = Vector2D(0f, 0f)
+        player.isOnGround = false
+    }
+
+    private fun restartGame() {
+        lives = 3
+        // CORRECCIÓN: Usar el objeto de la sealed class
+        gameState = GameState.Playing 
+        levelData?.enemies?.forEach { it.isAlive = true }
+        resetPlayerPosition()
     }
 
     override fun update(actions: Set<GameAction>, deltaTime: Float) {
         val currentLevel = levelData ?: return
 
-        // --- Lógica del Jugador ---
-        // (El código del jugador no cambia... se omite por brevedad)
+        // CORRECCIÓN: Usar el objeto de la sealed class
+        if (gameState == GameState.GameOver) {
+            if (GameAction.SWITCH_DIMENSION in actions && !switchKeyWasPressed) {
+                restartGame()
+            }
+            switchKeyWasPressed = GameAction.SWITCH_DIMENSION in actions
+            return 
+        }
+        
+        if (invincibilityTimer > 0) {
+            invincibilityTimer -= deltaTime
+        }
+
         player.velocity.x = 0f
         if (GameAction.MOVE_LEFT in actions) player.velocity.x = -Player.MOVE_SPEED
         if (GameAction.MOVE_RIGHT in actions) player.velocity.x = Player.MOVE_SPEED
@@ -37,34 +71,46 @@ class MiJuego : GameLogicService {
         } else {
             switchKeyWasPressed = false
         }
-        // La física del JUGADOR usa la dimensión del JUGADOR
         physicsService.update(player, currentLevel.platforms, currentDimension, deltaTime)
 
-        // --- INICIO LÓGICA BTG-011 (Req 3: Movimiento Independiente) ---
-        // Actualiza todos los enemigos
-        currentLevel.enemies.forEach { enemy ->
-            // El enemigo ahora SIEMPRE se actualiza.
-            
-            // 1. Filtra las plataformas que son relevantes para la dimensión de este ENEMIGO
+        val activeEnemies = currentLevel.enemies.filter { it.isAlive }
+        activeEnemies.forEach { enemy ->
             val enemyTangiblePlatforms = currentLevel.platforms.filter { it.tangibleInDimension == enemy.dimension }
-
-            // 2. Ejecuta la IA del enemigo (que ahora usa la detección de bordes)
             enemy.updateAI(enemyTangiblePlatforms)
-            
-            // 3. Ejecuta la física del enemigo (gravedad, colisiones)
-            //    usando solo las plataformas de SU PROPIA dimensión.
             enemyPhysicsService.update(enemy, enemyTangiblePlatforms, deltaTime)
         }
-        // --- FIN LÓGICA BTG-011 ---
+
+        if (invincibilityTimer <= 0) {
+            val combatResult = combatService.checkCombat(player, activeEnemies, currentDimension)
+            
+            when (combatResult) {
+                CombatResult.ENEMY_KILLED -> {
+                    player.velocity.y = Player.JUMP_STRENGTH * 0.7f
+                }
+                CombatResult.PLAYER_DAMAGED -> {
+                    lives -= 1
+                    invincibilityTimer = 2.0f
+                    
+                    if (lives <= 0) {
+                        // CORRECCIÓN: Usar el objeto de la sealed class
+                        gameState = GameState.GameOver 
+                    } else {
+                        resetPlayerPosition()
+                    }
+                }
+                CombatResult.NONE -> { /* No pasa nada */ }
+            }
+        }
     }
 
     override fun getWorldState(): WorldState {
         return WorldState(
             player = this.player,
             platforms = levelData?.platforms ?: emptyList(),
-            enemies = levelData?.enemies ?: emptyList(),
+            enemies = levelData?.enemies?.filter { it.isAlive } ?: emptyList(),
             collectibles = levelData?.collectibles ?: emptyList(),
-            currentDimension = this.currentDimension
+            currentDimension = this.currentDimension,
+            playerInvincible = invincibilityTimer > 0 
         )
     }
 
@@ -73,4 +119,6 @@ class MiJuego : GameLogicService {
     override fun getGameInfo(): String {
         return "Player X: ${player.position.x.toInt()} | Y: ${player.position.y.toInt()} | OnGround: ${player.isOnGround}"
     }
-}
+    
+    override fun getGameState(): GameState = gameState
+    override fun getLives(): Int = lives
