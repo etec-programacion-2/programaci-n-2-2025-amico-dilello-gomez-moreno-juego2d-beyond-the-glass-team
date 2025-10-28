@@ -15,14 +15,9 @@ class MiJuego : GameLogicService {
         player.position = levelData!!.playerStart.copy()
     }
 
-    /**
-     * El método 'update' ahora recibe un Set de acciones.
-     */
     override fun update(actions: Set<GameAction>, deltaTime: Float) {
         val currentLevel = levelData ?: return
 
-        // --- LÓGICA DE MOVIMIENTO ---
-        // Si no hay acciones de movimiento, la velocidad X es 0.
         player.velocity.x = 0f
         
         if (GameAction.MOVE_LEFT in actions) {
@@ -32,29 +27,24 @@ class MiJuego : GameLogicService {
             player.velocity.x = Player.MOVE_SPEED
         }
 
-        // --- LÓGICA DE SALTO ---
         if (GameAction.JUMP in actions && player.isOnGround) {
             player.velocity.y = Player.JUMP_STRENGTH
             player.isOnGround = false
         }
         
-        // --- LÓGICA DE CAMBIO DE DIMENSIÓN (MEJORADA) ---
-        // Comprueba si la acción de cambiar está en el conjunto
         if (GameAction.SWITCH_DIMENSION in actions) {
             if (!switchKeyWasPressed) {
                 currentDimension = if (currentDimension == Dimension.A) Dimension.B else Dimension.A
                 switchKeyWasPressed = true
             }
         } else {
-            // Si la tecla de cambiar NO está en el conjunto (se soltó), libera el seguro.
-            // Esto funciona incluso si otras teclas siguen presionadas.
             switchKeyWasPressed = false
         }
 
         physicsService.update(player, currentLevel.platforms, currentDimension, deltaTime)
     }
 
-    fun getWorldState(): WorldState {
+    override fun getWorldState(): WorldState {
         return WorldState(
             player = this.player,
             platforms = levelData?.platforms ?: emptyList(),
@@ -70,4 +60,3 @@ class MiJuego : GameLogicService {
         return "Player X: ${player.position.x.toInt()} | Y: ${player.position.y.toInt()} | OnGround: ${player.isOnGround}"
     }
 }
-

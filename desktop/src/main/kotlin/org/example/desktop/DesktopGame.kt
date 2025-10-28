@@ -6,10 +6,16 @@ import com.badlogic.gdx.Input
 import com.badlogic.gdx.graphics.g2d.BitmapFont
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
+import org.example.core.GameLogicService // <-- Importar la interfaz
 import org.example.core.MiJuego
 
 class DesktopGame : ApplicationAdapter() {
-    private lateinit var juego: MiJuego
+    
+    // --- CORRECCIÓN SOLID ---
+    // Dependemos de la abstracción (GameLogicService)
+    private lateinit var juego: GameLogicService
+    // ------------------------
+
     private lateinit var renderService: GdxRenderService
     private lateinit var inputService: GdxInputService
     private lateinit var shapeRenderer: ShapeRenderer
@@ -23,6 +29,8 @@ class DesktopGame : ApplicationAdapter() {
 
         renderService = GdxRenderService(shapeRenderer)
         inputService = GdxInputService()
+        
+        // La instanciación de la clase concreta se hace aquí (Composition Root)
         juego = MiJuego()
 
         juego.loadLevel("level1.txt")
@@ -30,12 +38,10 @@ class DesktopGame : ApplicationAdapter() {
     }
 
     override fun render() {
-        // Llama a getActions() que devuelve un Set
         val actions = inputService.getActions()
-        
-        // Pasa el Set a la lógica del juego
         juego.update(actions, Gdx.graphics.deltaTime)
         
+        // Ahora llamamos a los métodos de la interfaz
         val worldState = juego.getWorldState()
         
         renderService.renderWorld(worldState)
