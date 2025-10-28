@@ -5,7 +5,9 @@ class MiJuego : GameLogicService {
     private var player: Player = Player(position = Vector2D(0f, 0f), size = Vector2D(32f, 64f))
     private var levelData: LevelData? = null
     private val physicsService: PhysicsService = PhysicsService()
+    
     private var currentDimension: Dimension = Dimension.A
+    private var switchKeyWasPressed = false
 
     override fun loadLevel(levelName: String) {
         val loader = LevelLoader()
@@ -13,30 +15,36 @@ class MiJuego : GameLogicService {
         player.position = levelData!!.playerStart.copy()
     }
 
-    override fun update(action: GameAction, deltaTime: Float) {
+    override fun update(actions: Set<GameAction>, deltaTime: Float) {
         val currentLevel = levelData ?: return
 
-        // El 'when' ahora cubre TODOS los casos del enum GameAction
-        when (action) {
-            GameAction.MOVE_LEFT -> player.velocity.x = -Player.MOVE_SPEED
-            GameAction.MOVE_RIGHT -> player.velocity.x = Player.MOVE_SPEED
-            GameAction.JUMP -> if (player.isOnGround) {
-                player.velocity.y = Player.JUMP_STRENGTH
-                player.isOnGround = false
-            }
-            GameAction.SWITCH_DIMENSION -> {
-                // Futura lógica de cambio de dimensión
-            }
-            // --- CASO AÑADIDO ---
-            // Le decimos al compilador que sabemos de QUIT, pero no hacemos nada aquí.
-            GameAction.QUIT -> { /* La lógica de salida se maneja en la plataforma (cli/desktop) */ }
-            GameAction.NONE -> player.velocity.x = 0f
+        player.velocity.x = 0f
+        
+        if (GameAction.MOVE_LEFT in actions) {
+            player.velocity.x = -Player.MOVE_SPEED
+        }
+        if (GameAction.MOVE_RIGHT in actions) {
+            player.velocity.x = Player.MOVE_SPEED
+        }
+
+        if (GameAction.JUMP in actions && player.isOnGround) {
+            player.velocity.y = Player.JUMP_STRENGTH
+            player.isOnGround = false
         }
         
+        if (GameAction.SWITCH_DIMENSION in actions) {
+            if (!switchKeyWasPressed) {
+                currentDimension = if (currentDimension == Dimension.A) Dimension.B else Dimension.A
+                switchKeyWasPressed = true
+            }
+        } else {
+            switchKeyWasPressed = false
+        }
+
         physicsService.update(player, currentLevel.platforms, currentDimension, deltaTime)
     }
 
-    fun getWorldState(): WorldState {
+    override fun getWorldState(): WorldState {
         return WorldState(
             player = this.player,
             platforms = levelData?.platforms ?: emptyList(),
@@ -49,6 +57,6 @@ class MiJuego : GameLogicService {
     override fun getPlayer(): Player = player
     override fun getLevelData(): LevelData? = levelData
     override fun getGameInfo(): String {
-        return "Player X: ${player.position.x.toInt()} | Player Y: ${player.position.y.toInt()}"
+        return "Player X: ${player.position.x.toInt()} | Y: ${player.position.y.toInt()} | OnGround: ${player.isOnGround}"
     }
 }

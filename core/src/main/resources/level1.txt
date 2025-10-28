@@ -1,12 +1,14 @@
 # Esto es un archivo de nivel. Las líneas que inician con # o están vacías se ignoran.
 
 # POSICIÓN INICIAL DEL JUGADOR (x, y)
-P_START, 100, 100
+P_START, 50, 41
 
 # PLATAFORMAS (x, y, ancho, alto, dimension(A/B))
 PLATFORM, 0, 0, 800, 50, A
-PLATFORM, 200, 150, 100, 20, B
-PLATFORM, 500, 300, 150, 20, A
+PLATFORM, 0, 0, 800, 50, B
+PLATFORM, 150, 115, 150, 20, A
+PLATFORM, 350, 205, 150, 20, A
+PLATFORM, 550, 290, 150, 20, B
 
 # ENEMIGOS (x, y, ancho, alto, dimension(A/B))
 ENEMY, 600, 50, 30, 30, A
