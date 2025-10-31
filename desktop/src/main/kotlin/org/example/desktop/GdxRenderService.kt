@@ -4,13 +4,17 @@ import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
+import org.example.core.Player
 import org.example.core.RenderService
 import org.example.core.WorldState
+import org.example.core.Vector2D
 
 class GdxRenderService(private val shapeRenderer: ShapeRenderer) : RenderService {
 
     private val ghostColor = Color(1f, 0f, 0f, 0.3f)
     private val solidColor = Color.RED
+    // --- NUEVO ---
+    private val attackHitboxColor = Color(1f, 1f, 0f, 0.4f)
     private var blink: Boolean = false
 
     override fun renderWorld(worldState: WorldState) {
@@ -34,16 +38,28 @@ class GdxRenderService(private val shapeRenderer: ShapeRenderer) : RenderService
             shapeRenderer.rect(platform.position.x, platform.position.y, platform.size.x, platform.size.y)
         }
 
-        // --- LÓGICA BTG-012: Invencibilidad ---
-        // El "blink" (parpadeo) se alterna
+        // Dibujar Jugador
         blink = !blink
         if (worldState.playerInvincible && blink) {
-            // No dibujar al jugador (efecto de parpadeo)
+            // No dibujar (parpadeo)
         } else {
-            // Dibujar Jugador
             val player = worldState.player
             shapeRenderer.color = Color.GREEN
             shapeRenderer.rect(player.position.x, player.position.y, player.size.x, player.size.y)
+        }
+
+        // --- NUEVO: Dibujar Hitbox de Ataque ---
+        if (worldState.isPlayerAttacking) {
+            val hitboxPos = worldState.player.position.copy()
+            val hitboxSize = Player.ATTACK_HITBOX
+            if (worldState.playerFacingDirection > 0) {
+                hitboxPos.x += worldState.player.size.x
+            } else {
+                hitboxPos.x -= hitboxSize.x
+            }
+            
+            shapeRenderer.color = attackHitboxColor
+            shapeRenderer.rect(hitboxPos.x, hitboxPos.y, hitboxSize.x, hitboxSize.y)
         }
 
         // Dibujar Enemigos

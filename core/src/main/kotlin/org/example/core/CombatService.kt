@@ -1,60 +1,62 @@
 package org.example.core
 
-/**
- * Define el resultado de una comprobación de combate.
- */
-enum class CombatResult {
-    NONE,
-    ENEMY_KILLED,
-    PLAYER_DAMAGED
-}
-
-/**
- * Servicio que maneja la lógica de combate.
- * Comprueba colisiones entre el jugador y los enemigos.
- */
 class CombatService {
 
     /**
-     * Comprueba las colisiones entre el jugador y los enemigos.
-     * @return El resultado del combate.
+     * Comprueba si el ataque activo del jugador golpea a algún enemigo.
+     * CORRECCIÓN: Ahora filtra por la dimensión actual.
      */
-    fun checkCombat(player: Player, enemies: List<Enemy>, currentDimension: Dimension): CombatResult {
-        
-        // Solo comprueba enemigos que están vivos y en la dimensión del jugador
-        val activeEnemies = enemies.filter { it.isAlive && it.dimension == currentDimension }
-
-        for (enemy in activeEnemies) {
-            if (isColliding(player, enemy)) {
-                
-                // --- Criterio 3: Mecánica de Derrota (Stomp) ---
-                // ¿El jugador está cayendo?
-                // ¿Y está el jugador por encima de la mitad del enemigo?
-                val isStomp = player.velocity.y < 0 && 
-                              player.position.y > enemy.position.y + (enemy.size.y * 0.5f)
-                
-                if (isStomp) {
-                    enemy.isAlive = false // Marca al enemigo como muerto
-                    return CombatResult.ENEMY_KILLED
-                } else {
-                    // --- Criterio 2: El jugador recibe daño ---
-                    return CombatResult.PLAYER_DAMAGED
-                }
-            }
+    fun checkPlayerAttack(player: Player, enemies: List<Enemy>, currentDimension: Dimension): List<Enemy> {
+        if (!player.isAttacking) {
+            return emptyList()
         }
 
-        // No hubo colisiones
-        return CombatResult.NONE
+        val hitEnemies = mutableListOf<Enemy>()
+        val hitbox = getAttackHitbox(player)
+
+        // CORRECCIÓN: Filtra solo enemigos vivos Y en la dimensión del jugador
+        val attackableEnemies = enemies.filter { it.isAlive && it.dimension == currentDimension }
+
+        for (enemy in attackableEnemies) {
+            if (isAABBColliding(hitbox.first, hitbox.second, enemy.position, enemy.size)) {
+                hitEnemies.add(enemy)
+            }
+        }
+        return hitEnemies
     }
 
     /**
-     * Comprobación de colisión AABB (Axis-Aligned Bounding Box).
+     * Comprueba si el jugador está colisionando con algún enemigo activo.
      */
-    private fun isColliding(player: Player, enemy: Enemy): Boolean {
-        // simple AABB
-        return player.position.x < enemy.position.x + enemy.size.x &&
-               player.position.x + player.size.x > enemy.position.x &&
-               player.position.y < enemy.position.y + enemy.size.y &&
-               player.position.y + player.size.y > enemy.position.y
+    fun checkEnemyDamage(player: Player, enemies: List<Enemy>, currentDimension: Dimension): Boolean {
+        // Este filtro ya era correcto: comprueba enemigos vivos Y en la dimensión del jugador
+        val activeEnemies = enemies.filter { it.isAlive && it.dimension == currentDimension }
+
+        for (enemy in activeEnemies) {
+            if (isAABBColliding(player.position, player.size, enemy.position, enemy.size)) {
+                return true
+            }
+        }
+        return false
+    }
+
+    fun getAttackHitbox(player: Player): Pair<Vector2D, Vector2D> {
+        val hitboxPos = player.position.copy()
+        val hitboxSize = Player.ATTACK_HITBOX
+
+        if (player.facingDirection > 0) {
+            hitboxPos.x += player.size.x
+        } else {
+            hitboxPos.x -= hitboxSize.x
+        }
+        return Pair(hitboxPos, hitboxSize)
+    }
+
+    private fun isAABBColliding(posA: Vector2D, sizeA: Vector2D, posB: Vector2D, sizeB: Vector2D): Boolean {
+        return posA.x < posB.x + sizeB.x &&
+               posA.x + sizeA.x > posB.x &&
+               posA.y < posB.y + sizeB.y &&
+               posA.y + sizeA.y > posB.y
     }
 }
+

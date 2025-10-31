@@ -23,7 +23,6 @@ class DesktopGame : ApplicationAdapter() {
         shapeRenderer = ShapeRenderer()
         batch = SpriteBatch()
         font = BitmapFont()
-        font.data.scale(1.5f)
 
         renderService = GdxRenderService(shapeRenderer)
         inputService = GdxInputService()
