@@ -16,4 +16,9 @@ La historia sigue a Duodan, un prisionero atrapado por el oscuro y misterioso Da
 - **Mateo Gómez** 
 - **Santino Amico**
 
-
+## Pasos a seguir para desrcargar y jugar Beyond the Glass
+# Con SSH:
+1. En la ubicacion donde desees alojar nuestro juego, ejecute: 'git clone git@github.com:etec-programacion-2/programaci-n-2-2025-amico-dilello-gomez-moreno-juego2d-beyond-the-glass-team.git'
+2. Luego deberá de entrar a la carpeta, para eso ejecute: 'cd programaci-n-2-2025-amico-dilello-gomez-moreno-juego2d-beyond-the-glass-team
+'
+3. Para correr nuestro juego, ejecute: './gradlew desktop:run'
