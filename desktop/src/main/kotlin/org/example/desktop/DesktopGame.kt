@@ -6,16 +6,13 @@ import com.badlogic.gdx.Input
 import com.badlogic.gdx.graphics.g2d.BitmapFont
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
-import org.example.core.GameLogicService // <-- Importar la interfaz
+import org.example.core.GameLogicService
+import org.example.core.GameState
 import org.example.core.MiJuego
 
 class DesktopGame : ApplicationAdapter() {
     
-    // --- CORRECCIÓN SOLID ---
-    // Dependemos de la abstracción (GameLogicService)
     private lateinit var juego: GameLogicService
-    // ------------------------
-
     private lateinit var renderService: GdxRenderService
     private lateinit var inputService: GdxInputService
     private lateinit var shapeRenderer: ShapeRenderer
@@ -29,8 +26,6 @@ class DesktopGame : ApplicationAdapter() {
 
         renderService = GdxRenderService(shapeRenderer)
         inputService = GdxInputService()
-        
-        // La instanciación de la clase concreta se hace aquí (Composition Root)
         juego = MiJuego()
 
         juego.loadLevel("level1.txt")
@@ -38,17 +33,33 @@ class DesktopGame : ApplicationAdapter() {
     }
 
     override fun render() {
-        val actions = inputService.getActions()
-        juego.update(actions, Gdx.graphics.deltaTime)
         
-        // Ahora llamamos a los métodos de la interfaz
+        // CORRECCIÓN: Usar el objeto de la sealed class
+        if (juego.getGameState() == GameState.Playing) {
+            val actions = inputService.getActions()
+            juego.update(actions, Gdx.graphics.deltaTime)
+        } else if (juego.getGameState() == GameState.GameOver) {
+            val actions = inputService.getActions()
+            juego.update(actions, Gdx.graphics.deltaTime)
+        }
+        
         val worldState = juego.getWorldState()
-        
         renderService.renderWorld(worldState)
 
         batch.begin()
-        font.draw(batch, "Dimensión Actual: ${worldState.currentDimension}", 10f, 580f)
-        font.draw(batch, juego.getGameInfo(), 10f, 560f)
+        
+        // CORRECCIÓN: Usar el objeto de la sealed class
+        if (juego.getGameState() == GameState.GameOver) {
+            font.color = com.badlogic.gdx.graphics.Color.RED
+            font.draw(batch, "GAME OVER", 300f, 350f)
+            font.draw(batch, "Presiona SHIFT para reiniciar", 250f, 300f)
+        } else {
+            font.color = com.badlogic.gdx.graphics.Color.WHITE
+            font.draw(batch, "Dimensión Actual: ${worldState.currentDimension}", 10f, 580f)
+            font.draw(batch, juego.getGameInfo(), 10f, 560f)
+            font.draw(batch, "Vidas: ${juego.getLives()}", 10f, 540f)
+        }
+        
         batch.end()
 
         if (Gdx.input.isKeyPressed(Input.Keys.ESCAPE)) {

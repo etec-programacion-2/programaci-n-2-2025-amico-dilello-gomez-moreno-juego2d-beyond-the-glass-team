@@ -6,11 +6,10 @@ interface GameLogicService {
     fun getPlayer(): Player
     fun getLevelData(): LevelData?
     fun getGameInfo(): String
-
-    /**
-     * Devuelve el estado actual del mundo para ser renderizado.
-     * Añadido para cumplir con el Principio de Inversión de Dependencias.
-     */
     fun getWorldState(): WorldState
+
+    // --- NUEVO ---
+    fun getGameState(): GameState
+    fun getLives(): Int
 }
 

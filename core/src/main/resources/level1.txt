@@ -1,7 +1,7 @@
 # Esto es un archivo de nivel. Las líneas que inician con # o están vacías se ignoran.
 
 # POSICIÓN INICIAL DEL JUGADOR (x, y)
-P_START, 50, 41
+P_START, 50, 50
 
 # PLATAFORMAS (x, y, ancho, alto, dimension(A/B))
 PLATFORM, 0, 0, 800, 50, A
