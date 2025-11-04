@@ -25,7 +25,7 @@ La historia sigue a Duodan, un prisionero atrapado por el oscuro y misterioso Da
 
 Una vez finalizada la instalación ya podemos pasar a instalar el juego.
 ## En Linux:
-### Para Linux Debian, Ubuntu, Mint (y deribados):
+### Para Linux Debian, Ubuntu, Mint (y derivados):
 1. Ejecutamos: `sudo apt update`.
 2. Luego instalamos Git con el comando: `sudo apt install git`.
 
