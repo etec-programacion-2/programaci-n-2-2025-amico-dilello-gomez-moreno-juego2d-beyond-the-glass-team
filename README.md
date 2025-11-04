@@ -60,8 +60,8 @@ Para ambas debemos tener abierto nuestro **cmd** en Windows o nuesto **bash** en
 
 # Controles del juego
 
-**W**: Saltar
-**D**: Moverse a la derecha
-**A**: Moverse a la izquierda
-**Shift**: Cambiar de dimensión
-**Barra espaciadora**: Atacar
+- **W**: Saltar
+- **D**: Moverse a la derecha
+- **A**: Moverse a la izquierda
+- **Shift**: Cambiar de dimensión
+- **Barra espaciadora**: Atacar
