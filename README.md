@@ -16,10 +16,22 @@ La historia sigue a Duodan, un prisionero atrapado por el oscuro y misterioso Da
 - **Mateo Gómez** 
 - **Santino Amico**
 
-## Pasos a seguir para desrcargar y jugar Beyond the Glass
+# Pasos a seguir para descargar y jugar Beyond the Glass
+## Instalación previa:
+- Debemos contar con Git instalado en nuestro dispositivo. En caso de no tener Git instalado:
+## En Windows:
+1. Abrimos la terminal de Windows (Simbolo del sistema) y buscamos Git ejecutanto el comando: `winget search git`. En caso de no tener "**winget**", debe entrar a Microsoft Store e instalar "**winget**".
+2. Ahora debemos ejecutar el código: `winget install Git.Git` para instalar Git.
+Una vez finalizada la instalación ya podemos pasar a instalar el juego.
+## En Linux:
+### Para Linux con Debian, Ubuntu, Mint (y deribados):
+1. Ejecutamos: `sudo apt update`
+2. Luego instalamos Git con el comando: `sudo apt install git`
+Una vez finalizada la instalación ya podemos pasar a instalar el juego.
+# Instalación del juego
 ### Con SSH:
 1. En la ubicacion donde desees alojar nuestro juego, ejecute: `git clone git@github.com:etec-programacion-2/programaci-n-2-2025-amico-dilello-gomez-moreno-juego2d-beyond-the-glass-team.git`
-> [!TIP]
+> [!IMPORTANT]
 > Para este paso deberas contar con certificados de GitHub en tu carpeta `.ssh`
 2. Luego deberá de entrar a la carpeta, para eso ejecute: `cd programaci-n-2-2025-amico-dilello-gomez-moreno-juego2d-beyond-the-glass-team`
 3. Para correr nuestro juego, ejecute: `./gradlew desktop:run`
