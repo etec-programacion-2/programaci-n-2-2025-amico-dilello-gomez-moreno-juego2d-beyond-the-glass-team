@@ -1,8 +1,9 @@
 package org.example.core
 
 /**
- * Representa un vector en un plano 2D.
- * Se utiliza para la posición y la velocidad de las entidades.
+ * Representa un vector o un punto en un plano 2D (Modelo).
+ * Se utiliza para la posición, velocidad y tamaño de las entidades.
+ *
  * @property x La coordenada en el eje X.
  * @property y La coordenada en el eje Y.
  */

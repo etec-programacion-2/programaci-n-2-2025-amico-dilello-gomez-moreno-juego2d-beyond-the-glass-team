@@ -1,10 +1,12 @@
 package org.example.core
 
 /**
- * Representa una plataforma en el mundo del juego.
- * @property position La posición de la plataforma.
- * @property size Las dimensiones de la plataforma.
- * @property tangibleInDimension La dimensión en la que la plataforma es sólida y el jugador puede interactuar con ella.
+ * Representa una plataforma en el mundo del juego (Modelo).
+ *
+ * @property position La posición (x, y) de la esquina inferior izquierda.
+ * @property size Las dimensiones (ancho, alto).
+ * @property tangibleInDimension La propiedad CLAVE del juego. Define
+ * en qué dimensión (A o B) esta plataforma es sólida.
  */
 data class Platform(
     var position: Vector2D,
