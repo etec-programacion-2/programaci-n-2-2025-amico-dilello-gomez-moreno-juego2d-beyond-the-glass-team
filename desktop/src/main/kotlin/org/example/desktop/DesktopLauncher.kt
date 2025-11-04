@@ -3,12 +3,16 @@ package org.example.desktop
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration
 
-// Función principal que inicia la aplicación de escritorio.
+/**
+ * Punto de entrada (`main`) de la aplicación de escritorio.
+ * Su única responsabilidad es configurar y lanzar la ventana de LibGDX.
+ */
 fun main() {
+    // Configuración de la ventana
     val config = Lwjgl3ApplicationConfiguration().apply {
-        setTitle("Beyond the Glass")
-        setWindowedMode(800, 600)
-        useVsync(true)
+        setTitle("Beyond the Glass") // Título de la ventana
+        setWindowedMode(800, 600) // Tamaño de la ventana
+        useVsync(true) // Sincronización vertical
     }
     // Crea la aplicación de LibGDX, pasándole nuestra clase principal DesktopGame.
     Lwjgl3Application(DesktopGame(), config)
