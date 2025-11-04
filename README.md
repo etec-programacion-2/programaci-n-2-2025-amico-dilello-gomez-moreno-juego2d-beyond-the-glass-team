@@ -22,11 +22,13 @@ La historia sigue a Duodan, un prisionero atrapado por el oscuro y misterioso Da
 ## En Windows:
 1. Abrimos la terminal de Windows (Simbolo del sistema) y buscamos Git ejecutanto el comando: `winget search git`. En caso de no tener "**winget**", debe entrar a Microsoft Store e instalar "**winget**".
 2. Ahora debemos ejecutar el código: `winget install Git.Git` para instalar Git.
+
 Una vez finalizada la instalación ya podemos pasar a instalar el juego.
 ## En Linux:
 ### Para Linux Debian, Ubuntu, Mint (y deribados):
 1. Ejecutamos: `sudo apt update`.
 2. Luego instalamos Git con el comando: `sudo apt install git`.
+
 Una vez finalizada la instalación ya podemos pasar a instalar el juego.
 ### Para Linux Fedora, RHEL, CentOS, Rocky (y derivados):
 1. Ejecutamos (para Fedora o RHEL/Rocky/Alma 8 y superior): `sudo dnf install git`.
@@ -42,6 +44,9 @@ Una vez finalizada la instalación ya podemos pasar a instalar el juego.
 
 Una vez finalizada la instalación ya podemos pasar a instalar el juego.
 # Instalación del juego
+Hay dos formas recomendadas para instalar nuestro juego. Es posible elegir la que usted prefiera y no afectará absolutamente en nada.
+
+Para ambas debemos tener abierto nuestro **cmd** en Windows o nuesto **bash** en Linux.
 ### Con SSH:
 1. En la ubicacion donde desees alojar nuestro juego, ejecute: `git clone git@github.com:etec-programacion-2/programaci-n-2-2025-amico-dilello-gomez-moreno-juego2d-beyond-the-glass-team.git`.
 > [!IMPORTANT]
