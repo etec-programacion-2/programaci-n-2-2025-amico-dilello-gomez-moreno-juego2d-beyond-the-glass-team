@@ -57,3 +57,11 @@ Para ambas debemos tener abierto nuestro **cmd** en Windows o nuesto **bash** en
 1. En la ubicacion donde desees alojar nuestro juego, ejecute: `git clone https://github.com/etec-programacion-2/programaci-n-2-2025-amico-dilello-gomez-moreno-juego2d-beyond-the-glass-team.git`.
 2. Luego deberá de entrar a la carpeta, para eso ejecute: `cd programaci-n-2-2025-amico-dilello-gomez-moreno-juego2d-beyond-the-glass-team`.
 3. Para correr nuestro juego, ejecute: `./gradlew desktop:run`.
+
+# Controles del juego
+
+**W**: Saltar
+**D**: Moverse a la derecha
+**A**: Moverse a la izquierda
+**Shift**: Cambiar de dimensión
+**Barra espaciadora**: Atacar
