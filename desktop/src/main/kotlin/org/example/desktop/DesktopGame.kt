@@ -2,72 +2,109 @@ package org.example.desktop
 
 import com.badlogic.gdx.ApplicationAdapter
 import com.badlogic.gdx.Gdx
-import com.badlogic.gdx.Input
+import com.badlogic.gdx.graphics.Color
+import com.badlogic.gdx.graphics.OrthographicCamera
 import com.badlogic.gdx.graphics.g2d.BitmapFont
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import org.example.core.GameLogicService
 import org.example.core.GameState
 import org.example.core.MiJuego
-import com.badlogic.gdx.graphics.Color // --- ERROR SOLUCIONADO --- (Esta es la línea que faltaba)
+// --- CAMBIO: Imports para el Viewport ---
+import com.badlogic.gdx.utils.viewport.FitViewport
+import com.badlogic.gdx.utils.viewport.Viewport
 
 /**
- * Clase principal del módulo 'desktop'. Es el 'ApplicationAdapter' de LibGDX.
- * Actúa como el "puente" entre LibGDX y el 'core' (MiJuego).
- * Gestiona el bucle de renderizado de LibGDX.
+ * (ACTUALIZADO: Corrección de Viewport y Orden de Carga)
+ * Clase principal del módulo 'desktop'.
  */
 class DesktopGame : ApplicationAdapter() {
     
     // --- Dependencias del Core ---
-    private lateinit var juego: GameLogicService // La interfaz del motor de juego (DIP)
-    private lateinit var renderService: GdxRenderService // Implementación concreta de renderizado
-    private lateinit var inputService: GdxInputService // Implementación concreta de entrada
+    private lateinit var juego: GameLogicService
+    private lateinit var renderService: GdxRenderService
+    private lateinit var inputService: GdxInputService
 
-    // --- Objetos de LibGDX ---
-    private lateinit var shapeRenderer: ShapeRenderer // Para dibujar formas (jugador, plataformas)
-    private lateinit var batch: SpriteBatch // Para dibujar texto (UI)
-    private lateinit var font: BitmapFont // Para la fuente del texto
+    // --- Gestión de Assets ---
+    private lateinit var assetLoader: GdxAssetLoader
+    private lateinit var batch: SpriteBatch
     
-    // --- CAMBIO BTG-013: Fuente para habilidad ---
+    // --- Objetos de LibGDX ---
+    private lateinit var shapeRenderer: ShapeRenderer
+    private lateinit var uiBatch: SpriteBatch // Batch separado para UI (no usa la cámara)
+    private lateinit var font: BitmapFont
     private lateinit var abilityFont: BitmapFont
 
+    // --- Cámara y Viewport ---
+    private lateinit var camera: OrthographicCamera
+    // --- CAMBIO: Añadir Viewport ---
+    private lateinit var viewport: Viewport
+    private val WORLD_WIDTH = 800f
+    private val WORLD_HEIGHT = 600f
+
     /**
-     * Método 'create' de LibGDX. Se llama una sola vez al iniciar.
-     * Aquí es donde se inicializan todos los objetos.
+     * Método 'create' de LibGDX.
      */
     override fun create() {
         // 1. Inicializar objetos de LibGDX
         shapeRenderer = ShapeRenderer()
-        batch = SpriteBatch()
         font = BitmapFont()
-        
-        // --- CAMBIO BTG-013: Fuente de habilidad (color) ---
         abilityFont = BitmapFont()
-        abilityFont.color = Color.YELLOW // Esta línea ahora funciona gracias al import
+        abilityFont.color = Color.YELLOW
+        
+        batch = SpriteBatch()
+        uiBatch = SpriteBatch()
+        
+        // 2. Configurar Cámara y Viewport
+        camera = OrthographicCamera()
+        // --- CAMBIO: Usamos FitViewport ---
+        // El viewport gestionará la cámara y el tamaño del mundo.
+        viewport = FitViewport(WORLD_WIDTH, WORLD_HEIGHT, camera)
+        // (No necesitamos camera.setToOrtho(), el viewport lo hace)
+        
+        // --- CAMBIO CRÍTICO: Orden de Carga ---
+        
+        // 3. Cargar Assets
+        // ¡DEBEMOS cargar los assets ANTES de crear el RenderService
+        // que depende de ellos!
+        assetLoader = GdxAssetLoader()
+        assetLoader.loadAssets() // Carga real y bloqueante
 
-        // 2. Crear las implementaciones concretas de los servicios
-        renderService = GdxRenderService(shapeRenderer) // Le pasamos el ShapeRenderer
+        // 4. Crear las implementaciones de los servicios
+        // Ahora que los assets están cargados, el RenderService
+        // puede obtenerlos en su constructor sin problemas.
+        renderService = GdxRenderService(batch, shapeRenderer, assetLoader, camera)
         inputService = GdxInputService()
         
-        // 3. Crear el motor del juego (del 'core')
+        // 5. Crear el motor del juego (del 'core')
         juego = MiJuego()
 
-        // 4. Configurar el juego
-        juego.loadLevel("level1.txt") // Carga el nivel
-        inputService.start() // Inicia el servicio de input
+        // 6. Configurar el juego
+        juego.loadLevel("level1.txt")
+        inputService.start()
     }
 
     /**
-     * Método 'render' de LibGDX. Es el bucle principal, se llama en cada fotograma.
+     * --- CAMBIO: Añadir método 'resize' ---
+     * Se llama cuando la ventana se crea o cambia de tamaño.
+     * Es ESENCIAL para que el Viewport funcione.
+     */
+    override fun resize(width: Int, height: Int) {
+        // Actualiza el viewport y centra la cámara
+        viewport.update(width, height, true)
+    }
+
+    /**
+     * Método 'render' de LibGDX. Es el bucle principal.
      */
     override fun render() {
         
+        // (Ya no necesitamos camera.update(), el viewport lo maneja)
+
         // --- Lógica de Actualización (Update) ---
-        
         if (juego.getGameState() == GameState.Playing) {
             val actions = inputService.getActions()
             juego.update(actions, Gdx.graphics.deltaTime)
-            
         } else if (juego.getGameState() == GameState.GameOver) {
             val actions = inputService.getActions()
             juego.update(actions, Gdx.graphics.deltaTime)
@@ -75,48 +112,43 @@ class DesktopGame : ApplicationAdapter() {
         
         // --- Lógica de Dibujado (Render) ---
         
+        // 1. Renderizado del mundo (sprites y formas)
         val worldState = juego.getWorldState()
+        // Le pasamos el 'viewport' para que pueda aplicarlo
         renderService.renderWorld(worldState)
 
-        // 3. Dibujar la UI (texto)
-        batch.begin()
-        
+        // 2. Dibujar la UI (texto)
+        // El 'uiBatch' usa su propia proyección (default)
+        // para dibujar siempre en píxeles de pantalla.
+        uiBatch.begin()
         if (juego.getGameState() == GameState.GameOver) {
-            font.color = Color.RED // Esta línea ahora funciona
-            font.draw(batch, "GAME OVER", 300f, 350f)
-            font.draw(batch, "Presiona SHIFT para reiniciar", 250f, 300f)
+            font.color = Color.RED
+            font.draw(uiBatch, "GAME OVER", 300f, 350f)
+            font.draw(uiBatch, "Presiona SHIFT para reiniciar", 250f, 300f)
         } else {
-            // Información de estado general
-            font.color = Color.WHITE // Esta línea ahora funciona
-            font.draw(batch, "Dimensión Actual: ${worldState.currentDimension}", 10f, 580f)
-            font.draw(batch, juego.getGameInfo(), 10f, 560f)
-            font.draw(batch, "Vidas: ${juego.getLives()}", 10f, 540f)
-
-            // --- CAMBIO BTG-013: UI de Habilidades ---
+            font.color = Color.WHITE
+            font.draw(uiBatch, "Dimensión Actual: ${worldState.currentDimension}", 10f, 580f)
+            font.draw(uiBatch, juego.getGameInfo(), 10f, 560f)
+            font.draw(uiBatch, "Vidas: ${juego.getLives()}", 10f, 540f)
             val player = juego.getPlayer()
-            // Muestra contador de fragmentos
-            font.draw(batch, "Fragmentos: ${player.energyFragments} / 3", 10f, 520f)
-            
-            // Muestra si la habilidad está desbloqueada
+            font.draw(uiBatch, "Fragmentos: ${player.energyFragments} / 3", 10f, 520f)
             if (player.canDoubleJump) {
-                abilityFont.draw(batch, "¡DOBLE SALTO DESBLOQUEADO!", 10f, 500f)
+                abilityFont.draw(uiBatch, "¡DOBLE SALTO DESBLOQUEADO!", 10f, 500f)
             }
         }
-        
-        batch.end()
+        uiBatch.end()
     }
 
     /**
      * Se llama al cerrar la aplicación. Libera los recursos.
      */
     override fun dispose() {
-        shapeRenderer.dispose()
+        assetLoader.dispose()
         batch.dispose()
+        uiBatch.dispose()
+        shapeRenderer.dispose()
         font.dispose()
-        
-        // --- CAMBIO BTG-013 ---
         abilityFont.dispose()
-        
         inputService.stop()
     }
 }

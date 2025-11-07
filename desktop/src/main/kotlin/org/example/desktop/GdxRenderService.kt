@@ -3,103 +3,171 @@ package org.example.desktop
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.GL20
+import com.badlogic.gdx.graphics.Texture
+// --- CAMBIO: Importar la Cámara ---
+import com.badlogic.gdx.graphics.OrthographicCamera
+import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import org.example.core.Player
 import org.example.core.RenderService
 import org.example.core.WorldState
-import org.example.core.Vector2D
+import org.example.core.AssetManager
+import org.example.core.Dimension
 
 /**
- * Implementación CONCRETA de la interfaz 'RenderService' (del 'core')
- * usando el 'ShapeRenderer' de LibGDX.
+ * (ACTUALIZADO: Corrección de Cámara)
  *
- * Recibe el 'WorldState' y lo "traduce" a dibujos en pantalla.
- *
- * @param shapeRenderer El objeto de LibGDX que dibuja formas (rectángulos, círculos).
+ * @param batch El SpriteBatch para dibujar texturas (sprites).
+ * @param shapeRenderer El ShapeRenderer para dibujar formas (hitboxes, placeholders).
+ * @param assetLoader El cargador que provee las texturas.
+ * @param camera La cámara del mundo del juego (Inyectada).
  */
-class GdxRenderService(private val shapeRenderer: ShapeRenderer) : RenderService {
+class GdxRenderService(
+    private val batch: SpriteBatch,
+    private val shapeRenderer: ShapeRenderer,
+    private val assetLoader: GdxAssetLoader,
+    // --- CAMBIO: Aceptar la cámara ---
+    private val camera: OrthographicCamera
+) : RenderService {
 
     // --- Colores predefinidos ---
-    private val ghostColor = Color(1f, 0f, 0f, 0.3f) // Rojo transparente
-    private val solidColor = Color.RED // Rojo sólido
-    private val attackHitboxColor = Color(1f, 1f, 0f, 0.4f) // Amarillo transparente
+    private val ghostColor = Color(0.2f, 0.2f, 0.8f, 0.3f) // Tinte azul "fantasma"
+    private val attackHitboxColor = Color(1f, 1f, 0f, 0.4f)
     
-    // --- CAMBIO BTG-013: Color para coleccionables ---
-    private val collectibleColor = Color.YELLOW
-    
-    // Variable para el efecto de parpadeo (blink)
     private var blink: Boolean = false
+    
+    // --- Referencias a texturas ---
+    private val texBackground: Texture? = assetLoader.getTexture(AssetManager.World.BACKGROUND)
+    private val texPlatformA: Texture? = assetLoader.getTexture(AssetManager.World.PLATFORM_A)
+    private val texPlatformB: Texture? = assetLoader.getTexture(AssetManager.World.PLATFORM_B)
+    private val texCollectible: Texture? = assetLoader.getTexture(AssetManager.Items.ENERGY_FRAGMENT)
+    private val texEnemyBasic: Texture? = assetLoader.getTexture(AssetManager.Enemy.BASIC_MOVE)
+    private val texPlayerIdle: Texture? = assetLoader.getTexture(AssetManager.Player.IDLE)
+    private val texPlayerMove: Texture? = assetLoader.getTexture(AssetManager.Player.MOVE)
+    private val texPlayerJump: Texture? = assetLoader.getTexture(AssetManager.Player.JUMP)
+    private val texPlayerAttack: Texture? = assetLoader.getTexture(AssetManager.Player.ATTACK)
 
     /**
-     * Método central de dibujado. Recibe el 'WorldState' y dibuja todo.
+     * Método central de dibujado.
      */
     override fun renderWorld(worldState: WorldState) {
-        // 1. Limpiar la pantalla con un color de fondo oscuro
+        // 1. Limpiar la pantalla
         Gdx.gl.glClearColor(0.1f, 0.1f, 0.15f, 1f)
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT)
 
-        // 2. Activar 'blending' (para transparencias)
+        // 2. Dibujar Sprites (Texturas)
+        
+        // --- CAMBIO: Aplicar la cámara al SpriteBatch ---
+        // Le decimos al batch que dibuje en el sistema de coordenadas de la cámara
+        batch.projectionMatrix = camera.combined
+        
+        batch.begin()
+        
+        // --- DIBUJAR FONDO ---
+        if (texBackground != null) {
+            batch.draw(texBackground, 0f, 0f, 800f, 600f)
+        }
+
+        // --- DIBUJAR PLATAFORMAS ---
+        worldState.platforms.forEach { platform ->
+            val tex = if (platform.tangibleInDimension == Dimension.A) texPlatformA else texPlatformB
+            if (tex != null) {
+                batch.draw(tex, platform.position.x, platform.position.y, platform.size.x, platform.size.y)
+            }
+        }
+        
+        // --- DIBUJAR COLECCIONABLES ---
+        if (texCollectible != null) {
+            worldState.collectibles.filter { !it.isCollected }.forEach { collectible ->
+                batch.draw(texCollectible, collectible.position.x, collectible.position.y, collectible.size.x, collectible.size.y)
+            }
+        }
+
+        // --- DIBUJAR ENEMIGOS ---
+        if (texEnemyBasic != null) {
+            worldState.enemies.forEach { enemy ->
+                // Ajusta esto si tu sprite mira a la derecha por defecto: val flipX = enemy.direction < 0
+                val flipX = enemy.direction > 0 
+                batch.draw(
+                    texEnemyBasic,
+                    enemy.position.x, enemy.position.y,
+                    enemy.size.x, enemy.size.y,
+                    0, 0,
+                    texEnemyBasic.width, texEnemyBasic.height,
+                    flipX, false
+                )
+            }
+        }
+
+        // --- DIBUJAR JUGADOR ---
+        blink = !blink
+        if (!(worldState.playerInvincible && blink)) {
+            val player = worldState.player
+            
+            val playerTexture = when {
+                player.isAttacking -> texPlayerAttack
+                !player.isOnGround -> texPlayerJump
+                player.velocity.x != 0f -> texPlayerMove
+                else -> texPlayerIdle
+            } ?: texPlayerIdle
+
+            val flipX = player.facingDirection < 0
+
+            if (playerTexture != null) {
+                batch.draw(
+                    playerTexture,
+                    player.position.x, player.position.y,
+                    player.size.x, player.size.y,
+                    0, 0,
+                    playerTexture.width, playerTexture.height,
+                    flipX, false
+                )
+            }
+        }
+        
+        batch.end() // Terminamos el batch de sprites
+
+        // 3. Dibujar Formas (Debug y Efectos "Fantasma")
+        
         Gdx.gl.glEnable(GL20.GL_BLEND)
         Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA)
         
-        // 3. Iniciar el ShapeRenderer
+        // --- CAMBIO: Aplicar la cámara al ShapeRenderer ---
+        // Le decimos también que dibuje en el mismo sistema de coordenadas
+        shapeRenderer.projectionMatrix = camera.combined
+        
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled)
 
-        // 4. Dibujar Plataformas
-        worldState.platforms.forEach { platform ->
-            if (platform.position.y == 20f) {
-                shapeRenderer.color = Color.ROYAL
-            } else if (platform.tangibleInDimension == worldState.currentDimension) {
-                shapeRenderer.color = Color.WHITE
-            } else {
-                shapeRenderer.color = Color.DARK_GRAY
+        // --- DIBUJAR TINTES "FANTASMA" ---
+        // (Esto es lo que SÍ estabas viendo)
+        shapeRenderer.color = ghostColor
+        worldState.platforms
+            .filter { it.tangibleInDimension != worldState.currentDimension }
+            .forEach { platform ->
+                shapeRenderer.rect(platform.position.x, platform.position.y, platform.size.x, platform.size.y)
             }
-            shapeRenderer.rect(platform.position.x, platform.position.y, platform.size.x, platform.size.y)
-        }
+        
+        worldState.enemies
+            .filter { it.dimension != worldState.currentDimension }
+            .forEach { enemy ->
+                shapeRenderer.rect(enemy.position.x, enemy.position.y, enemy.size.x, enemy.size.y)
+            }
 
-        // 5. Dibujar Jugador
-        blink = !blink // Alterna 'blink' en cada fotograma
-        if (worldState.playerInvincible && blink) {
-            // Si está invencible Y 'blink' es true, no se dibuja (efecto parpadeo)
-        } else {
-            val player = worldState.player
-            shapeRenderer.color = Color.GREEN
-            shapeRenderer.rect(player.position.x, player.position.y, player.size.x, player.size.y)
-        }
-
-        // 6. Dibujar Hitbox de Ataque (Feedback Visual)
+        // --- DIBUJAR HITBOX DE ATAQUE (Debug) ---
         if (worldState.isPlayerAttacking) {
-            val hitboxPos = worldState.player.position.copy()
+            val player = worldState.player
+            val hitboxPos = player.position.copy()
             val hitboxSize = Player.ATTACK_HITBOX
-            if (worldState.playerFacingDirection > 0) { // Derecha
-                hitboxPos.x += worldState.player.size.x
-            } else { // Izquierda
+            if (worldState.playerFacingDirection > 0) {
+                hitboxPos.x += player.size.x
+            } else {
                 hitboxPos.x -= hitboxSize.x
             }
             shapeRenderer.color = attackHitboxColor
             shapeRenderer.rect(hitboxPos.x, hitboxPos.y, hitboxSize.x, hitboxSize.y)
         }
 
-        // 7. Dibujar Enemigos
-        worldState.enemies.forEach { enemy ->
-            if (enemy.dimension == worldState.currentDimension) {
-                shapeRenderer.color = solidColor
-            } else {
-                shapeRenderer.color = ghostColor
-            }
-            shapeRenderer.rect(enemy.position.x, enemy.position.y, enemy.size.x, enemy.size.y)
-        }
-        
-        // --- CAMBIO BTG-013: Dibujar Coleccionables ---
-        shapeRenderer.color = collectibleColor
-        // Filtra los que ya han sido recogidos
-        worldState.collectibles.filter { !it.isCollected }.forEach { collectible ->
-            shapeRenderer.rect(collectible.position.x, collectible.position.y, collectible.size.x, collectible.size.y)
-        }
-
-        // 8. Finalizar el dibujado de formas
         shapeRenderer.end()
-        // Desactivar 'blending'
         Gdx.gl.glDisable(GL20.GL_BLEND)
     }
 
