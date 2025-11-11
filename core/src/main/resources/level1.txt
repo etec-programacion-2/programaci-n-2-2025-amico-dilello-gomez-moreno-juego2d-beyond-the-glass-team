@@ -1,0 +1,20 @@
+# Esto es un archivo de nivel. Las líneas que inician con # o están vacías se ignoran.
+
+# POSICIÓN INICIAL DEL JUGADOR (x, y)
+P_START, 50, 50
+
+# PLATAFORMAS (x, y, ancho, alto, dimension(A/B))
+PLATFORM, 0, 0, 800, 50, A
+PLATFORM, 0, 0, 800, 50, B
+PLATFORM, 180, 120, 100, 20, A
+PLATFORM, 350, 200, 100, 20, A
+PLATFORM, 520, 280, 100, 20, B
+
+# ENEMIGOS (x, y, ancho, alto, dimension(A/B))
+ENEMY, 350, 220, 32, 32, A
+ENEMY, 520, 300, 32, 32, B
+
+# COLECCIONABLES (x, y, ancho, alto, valor)
+COLLECTIBLE, 435, 400, 15, 15, 1
+COLLECTIBLE, 605, 400, 15, 15, 1
+COLLECTIBLE, 165, 240, 15, 15, 1
