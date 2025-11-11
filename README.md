@@ -66,6 +66,7 @@ Para ambas debemos tener abierto nuestro **cmd** en Windows o nuesto **bash** en
 - **Shift**: Cambiar de dimensión
 - **Barra espaciadora**: Atacar
 
-Versiones que utilizamos
-Java 17
-Gradle 9.0.0
+# Versiones que utilizamos
+
+**Java**: 17
+**Gradle**: 9.0.0
