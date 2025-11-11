@@ -1,38 +1,32 @@
 package org.example.core
 
 /**
- * (Patrón Observador: Implementación del Observador)
- *
- * Esta clase implementa 'Observer' (POO: Herencia/Polimorfismo).
- * Su ÚNICA responsabilidad (SOLID: S) es escuchar eventos y
- * desbloquear habilidades para el jugador.
- *
- * @param player La instancia del jugador a la que modificará.
- * @param fragmentThreshold El número de fragmentos necesarios para desbloquear.
+ * (NUEVO - Parte de BTG-013)
+ * Este es el Observador (Observer).
+ * Escucha eventos del jugador y desbloquea habilidades cuando se cumplen
+ * las condiciones.
  */
-class AbilityUnlocker(
-    private val player: Player, // Referencia al estado del jugador
-    private val fragmentThreshold: Int = 3 // Umbral
-) : Observer {
+class AbilityUnlocker(private val player: Player) : Observer {
+
+    private var doubleJumpUnlocked = false
+
+    override fun onNotify(event: PlayerEvent) {
+        when (event) {
+            PlayerEvent.FragmentCollected -> checkEnergyFragments()
+            // Se podrían añadir más eventos aquí, ej: PlayerEvent.BossDefeated
+        }
+    }
 
     /**
-     * Implementación del método de la interfaz Observer.
-     * Aquí es donde ocurre la magia.
+     * Comprueba si el jugador tiene suficientes fragmentos para desbloquear
+     * el doble salto.
      */
-    override fun onNotify(event: PlayerEvent) {
-        // Solo nos interesa el evento de recolección
-        when (event) {
-            PlayerEvent.ENERGY_COLLECTED -> {
-                // Comprueba si se ha alcanzado el umbral Y si la habilidad no está ya desbloqueada
-                if (player.energyFragments >= fragmentThreshold && !player.canDoubleJump) {
-                    
-                    // ¡HABILIDAD DESBLOQUEADA!
-                    player.canDoubleJump = true
-                    
-                    // (Aquí se podría notificar a un servicio de UI, reproducir un sonido, etc.)
-                    println("¡DOBLE SALTO DESBLOQUEADO!")
-                }
-            }
+    private fun checkEnergyFragments() {
+        // --- LÓGICA DE BTG-013 (AHORA DEBERÍA COMPILAR) ---
+        if (!doubleJumpUnlocked && player.energyFragments >= Player.FRAGMENTS_TO_UNLOCK) {
+            player.canDoubleJump = true
+            doubleJumpUnlocked = true
+            // Podríamos notificar a otro sistema (ej. de UI) que muestre un mensaje
         }
     }
 }

@@ -2,153 +2,117 @@ package org.example.desktop
 
 import com.badlogic.gdx.ApplicationAdapter
 import com.badlogic.gdx.Gdx
-import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.OrthographicCamera
 import com.badlogic.gdx.graphics.g2d.BitmapFont
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
+import com.badlogic.gdx.utils.viewport.FitViewport
+import com.badlogic.gdx.utils.viewport.Viewport
 import org.example.core.GameLogicService
 import org.example.core.GameState
 import org.example.core.MiJuego
-// --- CAMBIO: Imports para el Viewport ---
-import com.badlogic.gdx.utils.viewport.FitViewport
-import com.badlogic.gdx.utils.viewport.Viewport
+import org.example.core.Player // (Importar Player para la constante de BTG-013)
 
-/**
- * (ACTUALIZADO: Corrección de Viewport y Orden de Carga)
- * Clase principal del módulo 'desktop'.
- */
 class DesktopGame : ApplicationAdapter() {
     
-    // --- Dependencias del Core ---
     private lateinit var juego: GameLogicService
     private lateinit var renderService: GdxRenderService
     private lateinit var inputService: GdxInputService
-
-    // --- Gestión de Assets ---
-    private lateinit var assetLoader: GdxAssetLoader
-    private lateinit var batch: SpriteBatch
+    private lateinit var assetLoader: GdxAssetLoader // (BTG-014)
     
-    // --- Objetos de LibGDX ---
     private lateinit var shapeRenderer: ShapeRenderer
-    private lateinit var uiBatch: SpriteBatch // Batch separado para UI (no usa la cámara)
+    private lateinit var batch: SpriteBatch
     private lateinit var font: BitmapFont
-    private lateinit var abilityFont: BitmapFont
 
-    // --- Cámara y Viewport ---
     private lateinit var camera: OrthographicCamera
-    // --- CAMBIO: Añadir Viewport ---
     private lateinit var viewport: Viewport
-    private val WORLD_WIDTH = 800f
-    private val WORLD_HEIGHT = 600f
 
-    /**
-     * Método 'create' de LibGDX.
-     */
+    companion object {
+        const val V_WIDTH = 800f
+        const val V_HEIGHT = 600f
+    }
+
     override fun create() {
-        // 1. Inicializar objetos de LibGDX
         shapeRenderer = ShapeRenderer()
-        font = BitmapFont()
-        abilityFont = BitmapFont()
-        abilityFont.color = Color.YELLOW
-        
         batch = SpriteBatch()
-        uiBatch = SpriteBatch()
-        
-        // 2. Configurar Cámara y Viewport
+        font = BitmapFont()
         camera = OrthographicCamera()
-        // --- CAMBIO: Usamos FitViewport ---
-        // El viewport gestionará la cámara y el tamaño del mundo.
-        viewport = FitViewport(WORLD_WIDTH, WORLD_HEIGHT, camera)
-        // (No necesitamos camera.setToOrtho(), el viewport lo hace)
         
-        // --- CAMBIO CRÍTICO: Orden de Carga ---
-        
-        // 3. Cargar Assets
-        // ¡DEBEMOS cargar los assets ANTES de crear el RenderService
-        // que depende de ellos!
-        assetLoader = GdxAssetLoader()
-        assetLoader.loadAssets() // Carga real y bloqueante
+        viewport = FitViewport(V_WIDTH, V_HEIGHT, camera)
+        camera.setToOrtho(false, V_WIDTH, V_HEIGHT)
 
-        // 4. Crear las implementaciones de los servicios
-        // Ahora que los assets están cargados, el RenderService
-        // puede obtenerlos en su constructor sin problemas.
+        // --- ORDEN DE CARGA CORREGIDO (BTG-014) ---
+        // 1. Cargar Assets
+        assetLoader = GdxAssetLoader()
+        assetLoader.loadAssets()
+
+        // 2. Inicializar Servicios (con assets ya cargados)
         renderService = GdxRenderService(batch, shapeRenderer, assetLoader, camera)
         inputService = GdxInputService()
-        
-        // 5. Crear el motor del juego (del 'core')
         juego = MiJuego()
+        // --- Fin BTG-014 ---
 
-        // 6. Configurar el juego
         juego.loadLevel("level1.txt")
         inputService.start()
     }
 
-    /**
-     * --- CAMBIO: Añadir método 'resize' ---
-     * Se llama cuando la ventana se crea o cambia de tamaño.
-     * Es ESENCIAL para que el Viewport funcione.
-     */
-    override fun resize(width: Int, height: Int) {
-        // Actualiza el viewport y centra la cámara
-        viewport.update(width, height, true)
-    }
-
-    /**
-     * Método 'render' de LibGDX. Es el bucle principal.
-     */
     override fun render() {
+        val deltaTime = Gdx.graphics.deltaTime
         
-        // (Ya no necesitamos camera.update(), el viewport lo maneja)
-
-        // --- Lógica de Actualización (Update) ---
+        // 1. Lógica del Juego
         if (juego.getGameState() == GameState.Playing) {
             val actions = inputService.getActions()
-            juego.update(actions, Gdx.graphics.deltaTime)
+            juego.update(actions, deltaTime)
         } else if (juego.getGameState() == GameState.GameOver) {
             val actions = inputService.getActions()
-            juego.update(actions, Gdx.graphics.deltaTime)
+            juego.update(actions, deltaTime) // MiJuego maneja el reinicio
         }
         
-        // --- Lógica de Dibujado (Render) ---
-        
-        // 1. Renderizado del mundo (sprites y formas)
+        // 2. Renderizado del Mundo
+        // (El renderService usa la cámara del mundo (camera.combined) internamente)
         val worldState = juego.getWorldState()
-        // Le pasamos el 'viewport' para que pueda aplicarlo
-        renderService.renderWorld(worldState)
+        renderService.renderWorld(worldState, deltaTime) // Pasamos deltaTime para animaciones
 
-        // 2. Dibujar la UI (texto)
-        // El 'uiBatch' usa su propia proyección (default)
-        // para dibujar siempre en píxeles de pantalla.
-        uiBatch.begin()
+        // 3. Renderizado de UI (encima de todo)
+        
+        // --- SOLUCIÓN AL ERROR DE COMPILACIÓN ---
+        // Reseteamos la cámara del batch a las coordenadas de la pantalla
+        // (El método antiguo y compatible)
+        batch.projectionMatrix.setToOrtho2D(0f, 0f, Gdx.graphics.width.toFloat(), Gdx.graphics.height.toFloat())
+        
+        batch.begin()
+        
         if (juego.getGameState() == GameState.GameOver) {
-            font.color = Color.RED
-            font.draw(uiBatch, "GAME OVER", 300f, 350f)
-            font.draw(uiBatch, "Presiona SHIFT para reiniciar", 250f, 300f)
+            font.color = com.badlogic.gdx.graphics.Color.RED
+            // (Ajuste de coordenadas de UI para la nueva cámara)
+            font.draw(batch, "GAME OVER", viewport.screenWidth / 2f - 40f, viewport.screenHeight / 2f + 50f)
+            font.draw(batch, "Presiona SHIFT para reiniciar", viewport.screenWidth / 2f - 100f, viewport.screenHeight / 2f)
         } else {
-            font.color = Color.WHITE
-            font.draw(uiBatch, "Dimensión Actual: ${worldState.currentDimension}", 10f, 580f)
-            font.draw(uiBatch, juego.getGameInfo(), 10f, 560f)
-            font.draw(uiBatch, "Vidas: ${juego.getLives()}", 10f, 540f)
-            val player = juego.getPlayer()
-            font.draw(uiBatch, "Fragmentos: ${player.energyFragments} / 3", 10f, 520f)
-            if (player.canDoubleJump) {
-                abilityFont.draw(uiBatch, "¡DOBLE SALTO DESBLOQUEADO!", 10f, 500f)
+            font.color = com.badlogic.gdx.graphics.Color.WHITE
+            // (Coordenadas de UI ajustadas para la nueva cámara)
+            font.draw(batch, "Dimension Actual: ${worldState.currentDimension}", 10f, viewport.screenHeight - 20f)
+            font.draw(batch, "Vidas: ${juego.getLives()}", 10f, viewport.screenHeight - 40f)
+
+            // --- UI DE BTG-013 (LA QUE FALTABA) ---
+            font.draw(batch, "Fragmentos: ${juego.getPlayerFragments()} / ${Player.FRAGMENTS_TO_UNLOCK}", 10f, viewport.screenHeight - 60f)
+            if (juego.canPlayerDoubleJump()) {
+                font.color = com.badlogic.gdx.graphics.Color.YELLOW
+                font.draw(batch, "¡DOBLE SALTO DESBLOQUEADO!", 10f, viewport.screenHeight - 80f)
             }
         }
-        uiBatch.end()
+        
+        batch.end()
     }
 
-    /**
-     * Se llama al cerrar la aplicación. Libera los recursos.
-     */
+    override fun resize(width: Int, height: Int) {
+        // (Añadido 'true' para centrar la cámara)
+        viewport.update(width, height, true) 
+    }
+
     override fun dispose() {
-        assetLoader.dispose()
-        batch.dispose()
-        uiBatch.dispose()
         shapeRenderer.dispose()
+        batch.dispose()
         font.dispose()
-        abilityFont.dispose()
-        inputService.stop()
+        assetLoader.dispose() // (BTG-014)
     }
 }

@@ -4,9 +4,9 @@ import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.Texture
-// --- CAMBIO: Importar la Cámara ---
 import com.badlogic.gdx.graphics.OrthographicCamera
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
+import com.badlogic.gdx.graphics.g2d.TextureRegion
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import org.example.core.Player
 import org.example.core.RenderService
@@ -15,88 +15,100 @@ import org.example.core.AssetManager
 import org.example.core.Dimension
 
 /**
- * (ACTUALIZADO: Corrección de Cámara)
- *
- * @param batch El SpriteBatch para dibujar texturas (sprites).
- * @param shapeRenderer El ShapeRenderer para dibujar formas (hitboxes, placeholders).
- * @param assetLoader El cargador que provee las texturas.
- * @param camera La cámara del mundo del juego (Inyectada).
+ * (ACTUALIZADO: Usa el nuevo Animation.kt de 2 columnas y el hitbox de 32x32.
+ * Vuelve a dibujar TODOS los hitboxes).
  */
 class GdxRenderService(
     private val batch: SpriteBatch,
     private val shapeRenderer: ShapeRenderer,
     private val assetLoader: GdxAssetLoader,
-    // --- CAMBIO: Aceptar la cámara ---
     private val camera: OrthographicCamera
 ) : RenderService {
 
-    // --- Colores predefinidos ---
-    private val ghostColor = Color(0.2f, 0.2f, 0.8f, 0.3f) // Tinte azul "fantasma"
-    private val attackHitboxColor = Color(1f, 1f, 0f, 0.4f)
+    // --- Colores ---
+    private val ghostColor = Color(0.2f, 0.2f, 0.8f, 0.3f)
+    private val groundColorA = Color.GREEN
+    private val groundColorB = Color.CYAN
+    
+    // --- Colores para Hitboxes ---
+    private val playerHitboxColor = Color(0f, 1f, 0f, 0.3f)     // Verde
+    private val enemyHitboxColor = Color(1f, 0f, 0f, 0.3f)      // Rojo
+    private val collectibleHitboxColor = Color(1f, 1f, 0f, 0.3f) // Amarillo
+    private val attackHitboxColor = Color(1f, 0.5f, 0f, 0.4f)   // Naranja
     
     private var blink: Boolean = false
     
-    // --- Referencias a texturas ---
-    private val texBackground: Texture? = assetLoader.getTexture(AssetManager.World.BACKGROUND)
-    private val texPlatformA: Texture? = assetLoader.getTexture(AssetManager.World.PLATFORM_A)
-    private val texPlatformB: Texture? = assetLoader.getTexture(AssetManager.World.PLATFORM_B)
-    private val texCollectible: Texture? = assetLoader.getTexture(AssetManager.Items.ENERGY_FRAGMENT)
-    private val texEnemyBasic: Texture? = assetLoader.getTexture(AssetManager.Enemy.BASIC_MOVE)
-    private val texPlayerIdle: Texture? = assetLoader.getTexture(AssetManager.Player.IDLE)
-    private val texPlayerMove: Texture? = assetLoader.getTexture(AssetManager.Player.MOVE)
-    private val texPlayerJump: Texture? = assetLoader.getTexture(AssetManager.Player.JUMP)
-    private val texPlayerAttack: Texture? = assetLoader.getTexture(AssetManager.Player.ATTACK)
+    private val texBackground: Texture?
+    
+    // --- Animaciones ---
+    private val animPlayerIdle: Animation
+    private val animPlayerMove: Animation
+    private val animPlayerJump: Animation 
+    private val animPlayerAttackGround: Animation
+    private val animPlayerAttackAir: Animation    
+    private val animEnemyBasic: Animation 
 
-    /**
-     * Método central de dibujado.
-     */
-    override fun renderWorld(worldState: WorldState) {
+    private var currentAnimation: Animation
+
+    init {
+        texBackground = assetLoader.getTexture(AssetManager.World.BACKGROUND)
+        
+        // --- SOLUCIÓN: USAR EL NUEVO Animation.kt (2 columnas) ---
+        val numColumns = 2 // ¡La clave de tu animación!
+
+        // player idle = 4 FPS (4 frames)
+        animPlayerIdle = Animation(
+            assetLoader.getTexture(AssetManager.Player.IDLE)!!, 
+            totalFrames = 4, numColumns = numColumns, frameDuration = 1.0f / 4.0f // 0.25f
+        )
+        
+        // player move = 4 FPS (6 frames)
+        animPlayerMove = Animation(
+            assetLoader.getTexture(AssetManager.Player.MOVE)!!, 
+            totalFrames = 6, numColumns = numColumns, frameDuration = 1.0f / 4.0f // 0.25f
+        )
+        
+        // player jump = 3 FPS (2 frames: subida y caida)
+        animPlayerJump = Animation(
+            assetLoader.getTexture(AssetManager.Player.JUMP)!!, 
+            totalFrames = 2, numColumns = numColumns, frameDuration = 1.0f / 3.0f // 0.333f
+        )
+        animPlayerJump.isLooping = false 
+        
+        // player attack ground = 6 FPS (3 frames)
+        animPlayerAttackGround = Animation(
+            assetLoader.getTexture(AssetManager.Player.ATTACK_GROUND)!!, 
+            totalFrames = 3, numColumns = numColumns, frameDuration = 1.0f / 6.0f // 0.166f
+        )
+        animPlayerAttackGround.isLooping = false
+        
+        // player attack air = 6 FPS (3 frames)
+        animPlayerAttackAir = Animation(
+            assetLoader.getTexture(AssetManager.Player.ATTACK_AIR)!!, 
+            totalFrames = 3, numColumns = numColumns, frameDuration = 1.0f / 6.0f // 0.166f
+        )
+        animPlayerAttackAir.isLooping = false
+        
+        // (Enemigo, no solicitado pero se queda con el valor lento)
+        animEnemyBasic = Animation(
+            assetLoader.getTexture(AssetManager.Enemy.BASIC_MOVE)!!, 
+            totalFrames = 4, numColumns = numColumns, frameDuration = 0.3f
+        )
+        
+        currentAnimation = animPlayerIdle
+    }
+
+    override fun renderWorld(worldState: WorldState, deltaTime: Float) {
         // 1. Limpiar la pantalla
         Gdx.gl.glClearColor(0.1f, 0.1f, 0.15f, 1f)
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT)
 
         // 2. Dibujar Sprites (Texturas)
-        
-        // --- CAMBIO: Aplicar la cámara al SpriteBatch ---
-        // Le decimos al batch que dibuje en el sistema de coordenadas de la cámara
         batch.projectionMatrix = camera.combined
-        
         batch.begin()
         
-        // --- DIBUJAR FONDO ---
-        if (texBackground != null) {
-            batch.draw(texBackground, 0f, 0f, 800f, 600f)
-        }
-
-        // --- DIBUJAR PLATAFORMAS ---
-        worldState.platforms.forEach { platform ->
-            val tex = if (platform.tangibleInDimension == Dimension.A) texPlatformA else texPlatformB
-            if (tex != null) {
-                batch.draw(tex, platform.position.x, platform.position.y, platform.size.x, platform.size.y)
-            }
-        }
-        
-        // --- DIBUJAR COLECCIONABLES ---
-        if (texCollectible != null) {
-            worldState.collectibles.filter { !it.isCollected }.forEach { collectible ->
-                batch.draw(texCollectible, collectible.position.x, collectible.position.y, collectible.size.x, collectible.size.y)
-            }
-        }
-
-        // --- DIBUJAR ENEMIGOS ---
-        if (texEnemyBasic != null) {
-            worldState.enemies.forEach { enemy ->
-                // Ajusta esto si tu sprite mira a la derecha por defecto: val flipX = enemy.direction < 0
-                val flipX = enemy.direction > 0 
-                batch.draw(
-                    texEnemyBasic,
-                    enemy.position.x, enemy.position.y,
-                    enemy.size.x, enemy.size.y,
-                    0, 0,
-                    texEnemyBasic.width, texEnemyBasic.height,
-                    flipX, false
-                )
-            }
+        texBackground?.let {
+            batch.draw(it, 0f, 0f, 800f, 600f)
         }
 
         // --- DIBUJAR JUGADOR ---
@@ -104,62 +116,100 @@ class GdxRenderService(
         if (!(worldState.playerInvincible && blink)) {
             val player = worldState.player
             
-            val playerTexture = when {
-                player.isAttacking -> texPlayerAttack
-                !player.isOnGround -> texPlayerJump
-                player.velocity.x != 0f -> texPlayerMove
-                else -> texPlayerIdle
-            } ?: texPlayerIdle
-
-            val flipX = player.facingDirection < 0
-
-            if (playerTexture != null) {
-                batch.draw(
-                    playerTexture,
-                    player.position.x, player.position.y,
-                    player.size.x, player.size.y,
-                    0, 0,
-                    playerTexture.width, playerTexture.height,
-                    flipX, false
-                )
+            val newAnimation: Animation = when {
+                player.isAttacking && player.isOnGround -> {
+                    if (currentAnimation != animPlayerAttackGround) animPlayerAttackGround.reset()
+                    animPlayerAttackGround
+                }
+                player.isAttacking && !player.isOnGround -> {
+                    if (currentAnimation != animPlayerAttackAir) animPlayerAttackAir.reset()
+                    animPlayerAttackAir
+                }
+                !player.isOnGround -> animPlayerJump
+                player.velocity.x != 0f -> animPlayerMove
+                else -> animPlayerIdle
             }
+            
+            currentAnimation = newAnimation
+            currentAnimation.update(deltaTime)
+
+            val frame: TextureRegion = when {
+                currentAnimation == animPlayerJump -> {
+                    if (player.velocity.y > 0) animPlayerJump.getFrame(0) // Frame 0 = Subir
+                    else animPlayerJump.getFrame(1) // Frame 1 = Caer
+                }
+                else -> currentAnimation.getFrame()
+            }
+
+            val desiredFlip = (player.facingDirection < 0)
+            if (frame.isFlipX != desiredFlip) {
+                frame.flip(true, false)
+            }
+
+            // --- SOLUCIÓN: DIBUJO 32x32 ---
+            // El hitbox y el sprite ahora coinciden perfectamente (32x32)
+            batch.draw(frame, player.position.x, player.position.y, player.size.x, player.size.y)
         }
         
         batch.end() // Terminamos el batch de sprites
 
-        // 3. Dibujar Formas (Debug y Efectos "Fantasma")
-        
+        // 3. Dibujar Formas (Hitboxes, Fantasmas, UI de Formas)
         Gdx.gl.glEnable(GL20.GL_BLEND)
-        Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA)
-        
-        // --- CAMBIO: Aplicar la cámara al ShapeRenderer ---
-        // Le decimos también que dibuje en el mismo sistema de coordenadas
         shapeRenderer.projectionMatrix = camera.combined
-        
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled)
 
-        // --- DIBUJAR TINTES "FANTASMA" ---
-        // (Esto es lo que SÍ estabas viendo)
-        shapeRenderer.color = ghostColor
-        worldState.platforms
-            .filter { it.tangibleInDimension != worldState.currentDimension }
-            .forEach { platform ->
-                shapeRenderer.rect(platform.position.x, platform.position.y, platform.size.x, platform.size.y)
-            }
-        
+        // --- SOLUCIÓN: DIBUJAR TODOS LOS HITBOXES ---
+
+        // A. Hitbox del Jugador (Se dibuja sobre el sprite)
+        val player = worldState.player
+        shapeRenderer.color = playerHitboxColor
+        shapeRenderer.rect(player.position.x, player.position.y, player.size.x, player.size.y)
+
+        // B. Hitboxes de Enemigos (solo los vivos y en la dimensión actual)
+        shapeRenderer.color = enemyHitboxColor
         worldState.enemies
-            .filter { it.dimension != worldState.currentDimension }
+            .filter { it.dimension == worldState.currentDimension } // Solo los de esta dimensión
             .forEach { enemy ->
                 shapeRenderer.rect(enemy.position.x, enemy.position.y, enemy.size.x, enemy.size.y)
             }
+        
+        // C. Hitboxes de Coleccionables
+        shapeRenderer.color = collectibleHitboxColor
+        worldState.collectibles
+            .filter { !it.isCollected } // (Oculta los ya recogidos)
+            .forEach { collectible ->
+                shapeRenderer.rect(collectible.position.x, collectible.position.y, collectible.size.x, collectible.size.y)
+            }
 
-        // --- DIBUJAR HITBOX DE ATAQUE (Debug) ---
+        // D. Lógica de Plataformas (Suelo sólido y Fantasmas)
+        worldState.platforms.forEach { platform ->
+            if (platform.tangibleInDimension == worldState.currentDimension) {
+                // TANGIBLE: Dibujar suelo sólido (si es suelo)
+                if (platform.position.y < 50f) {
+                    shapeRenderer.color = if (worldState.currentDimension == Dimension.A) groundColorA else groundColorB
+                    shapeRenderer.rect(platform.position.x, platform.position.y, platform.size.x, platform.size.y)
+                }
+            } else {
+                // INTANGIBLE: Dibujar fantasma
+                shapeRenderer.color = ghostColor
+                shapeRenderer.rect(platform.position.x, platform.position.y, platform.size.x, platform.size.y)
+            }
+        }
+        
+        // E. Lógica de Fantasmas de Enemigos
+        worldState.enemies
+            .filter { it.dimension != worldState.currentDimension }
+            .forEach { enemy ->
+                shapeRenderer.color = ghostColor
+                shapeRenderer.rect(enemy.position.x, enemy.position.y, enemy.size.x, enemy.size.y)
+            }
+
+        // F. Hitbox de Ataque del Jugador (Efecto)
         if (worldState.isPlayerAttacking) {
-            val player = worldState.player
             val hitboxPos = player.position.copy()
             val hitboxSize = Player.ATTACK_HITBOX
             if (worldState.playerFacingDirection > 0) {
-                hitboxPos.x += player.size.x
+                hitboxPos.x += player.size.x // Se posiciona después del cuerpo (32x32)
             } else {
                 hitboxPos.x -= hitboxSize.x
             }
@@ -171,7 +221,6 @@ class GdxRenderService(
         Gdx.gl.glDisable(GL20.GL_BLEND)
     }
 
-    // --- Métodos de la interfaz no utilizados (necesarios por el contrato) ---
     override fun drawSprite(sprite: Any, x: Float, y: Float) {}
     override fun render() {}
 }

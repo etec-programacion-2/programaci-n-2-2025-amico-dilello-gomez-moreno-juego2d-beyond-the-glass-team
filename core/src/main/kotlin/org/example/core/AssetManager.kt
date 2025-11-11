@@ -1,20 +1,11 @@
 package org.example.core
 
 /**
- * (Patrón de Diseño: Singleton)
- *
- * (ACTUALIZADO: Corrección de ruta RAÍZ 'assets/')
- * Todos los assets deben tener el prefijo de la carpeta raíz "assets/".
+ * (ACTUALIZADO: Añadida la animación de ATAQUE AÉREO)
  */
 object AssetManager {
 
-    // --- Raíz de los Assets ---
-    // (Asumiendo que has puesto la carpeta 'assets' en 'desktop/src/main/resources/')
     private const val ROOT = "assets/"
-
-    // --- Extensiones (para consistencia) ---
-    private const val PNG = ".png"
-    private const val MP3 = ".mp3"
 
     /**
      * Assets del Jugador
@@ -23,7 +14,10 @@ object AssetManager {
         const val IDLE = "${ROOT}jugador/Leoric animacion AFK.png"
         const val MOVE = "${ROOT}jugador/Leoric animacion caminar.png"
         const val JUMP = "${ROOT}jugador/Leoric animacion salto y caida.png"
-        const val ATTACK = "${ROOT}jugador/Leoric ataque.png" 
+        
+        // --- CAMBIO: Separamos el ataque en suelo y aire ---
+        const val ATTACK_GROUND = "${ROOT}jugador/Leoric ataque.png"
+        const val ATTACK_AIR = "${ROOT}jugador/Leoric ataque en aire.png"
     }
 
     /**
@@ -53,17 +47,18 @@ object AssetManager {
      * Assets de Sonido
      */
     object Sound {
-        const val JUMP = "${ROOT}sound/jump$MP3"
-        const val ATTACK = "${ROOT}sound/attack$MP3"
-        const val COLLECT = "${ROOT}sound/collect$MP3"
-        const val HIT = "${ROOT}sound/hit$MP3"
-        const val MUSIC_LEVEL1 = "${ROOT}music/level1$MP3"
+        const val JUMP = "${ROOT}sound/jump.mp3"
+        const val ATTACK = "${ROOT}sound/attack.mp3"
+        const val COLLECT = "${ROOT}sound/collect.mp3"
+        const val HIT = "${ROOT}sound/hit.mp3"
+        const val MUSIC_LEVEL1 = "${ROOT}music/level1.mp3"
     }
 
     // --- Método de ayuda para obtener todos los assets ---
     fun getAllTexturePaths(): List<String> {
         return listOf(
-            Player.IDLE, Player.MOVE, Player.JUMP, Player.ATTACK,
+            Player.IDLE, Player.MOVE, Player.JUMP, 
+            Player.ATTACK_GROUND, Player.ATTACK_AIR, // <-- CAMBIO
             Enemy.BASIC_MOVE,
             World.PLATFORM_A, World.PLATFORM_B, World.BACKGROUND,
             Items.ENERGY_FRAGMENT

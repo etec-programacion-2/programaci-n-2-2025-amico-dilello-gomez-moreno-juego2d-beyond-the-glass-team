@@ -1,11 +1,12 @@
 package org.example.core
 
 /**
- * (Patrón Observador: Evento)
- *
- * Define los tipos de eventos que el "Subject" (MiJuego) puede notificar
- * a sus "Observers" (AbilityUnlocker).
+ * (NUEVO - Parte de BTG-013)
+ * Define los tipos de eventos que el 'Subject' (MiJuego) puede notificar
+ * a los 'Observer' (AbilityUnlocker).
  */
-enum class PlayerEvent {
-    ENERGY_COLLECTED // Evento para cuando se recoge un fragmento
+sealed class PlayerEvent {
+    object FragmentCollected : PlayerEvent()
+    // object PlayerDied : PlayerEvent()
+    // object BossDefeated : PlayerEvent()
 }
