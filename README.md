@@ -16,6 +16,11 @@ La historia sigue a Duodan, un prisionero atrapado por el oscuro y misterioso Da
 - **Mateo Gómez** 
 - **Santino Amico**
 
+# Versiones que utilizamos
+
+-**Java**: 17
+-**Gradle**: 9.0.0
+
 # Pasos a seguir para descargar y jugar Beyond the Glass
 ## Instalación previa:
 - Debemos contar con Git instalado en nuestro dispositivo. En caso de no tener Git instalado:
@@ -65,8 +70,3 @@ Para ambas debemos tener abierto nuestro **cmd** en Windows o nuesto **bash** en
 - **A**: Moverse a la izquierda
 - **Shift**: Cambiar de dimensión
 - **Barra espaciadora**: Atacar
-
-# Versiones que utilizamos
-
-**Java**: 17
-**Gradle**: 9.0.0
