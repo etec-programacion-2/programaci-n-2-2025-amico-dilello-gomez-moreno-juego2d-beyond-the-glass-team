@@ -65,3 +65,7 @@ Para ambas debemos tener abierto nuestro **cmd** en Windows o nuesto **bash** en
 - **A**: Moverse a la izquierda
 - **Shift**: Cambiar de dimensión
 - **Barra espaciadora**: Atacar
+
+Versiones que utilizamos
+Java 17
+Gradle 9.0.0
