@@ -19,6 +19,7 @@ La historia sigue a Duodan, un prisionero atrapado por el oscuro y misterioso Da
 # Versiones que utilizamos
 
 -**Java**: 17
+
 -**Gradle**: 9.0.0
 
 # Pasos a seguir para descargar y jugar Beyond the Glass
