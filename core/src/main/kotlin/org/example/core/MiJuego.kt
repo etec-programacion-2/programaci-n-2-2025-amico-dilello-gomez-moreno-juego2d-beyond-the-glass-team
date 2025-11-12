@@ -4,265 +4,293 @@ package org.example.core
  * Implementación de la lógica del juego (SOLID: Inversión de Dependencias).
  * Esta es la clase "Directora" que implementa 'GameLogicService'.
  * Coordina todos los servicios (Física, Combate, IA) y maneja el estado del juego.
+ *
+ * ---
+ * @see "Issue BTG-002: Implementa la interfaz 'GameLogicService'."
+ * @see "Issue BTG-008: Gestiona el bucle de juego ('update') y el estado ('gameState')."
+ * ---
  */
 class MiJuego : GameLogicService {
 
     // --- ESTADO DEL JUEGO ---
+    // (Relacionado con BTG-006)
     private var player: Player = Player(position = Vector2D(0f, 0f), size = Vector2D(32f, 64f))
+    // (Relacionado con BTG-007)
     private var levelData: LevelData? = null // Datos cargados del nivel (plataformas, enemigos)
+    // (Relacionado con BTG-008, BTG-012)
     private var gameState: GameState = GameState.Playing // Estado actual (Playing, GameOver)
+    // (Relacionado con BTG-012)
     private var lives: Int = 3
     private var invincibilidadTimer: Float = 0f // Temporizador para cuando el jugador es golpeado
+    // (Relacionado con BTG-009)
     private var currentDimension: Dimension = Dimension.A // Dimensión actual
     private var switchKeyWasPressed = false // Controla el cooldown del cambio de dimensión
     private var originalPlayerStart: Vector2D = Vector2D(0f, 0f)
 
-    // --- CAMBIO BTG-013: Control de "tecla recién presionada" para el salto ---
+    // (Relacionado con BTG-013) Control de "tecla recién presionada" para el salto
     private var jumpKeyWasPressed = false
 
     // --- SERVICIOS (SOLID: S) ---
+    // (POO: Encapsulamiento) Los servicios son privados y 'MiJuego' delega tareas.
+    // (Relacionado con BTG-010, BTG-006)
     private val physicsService: PhysicsService = PhysicsService()
+    // (Relacionado con BTG-010, BTG-011)
     private val enemyPhysicsService: EnemyPhysicsService = EnemyPhysicsService()
+    // (Relacionado con BTG-012)
     private val combatService: CombatService = CombatService()
-    
-    // --- CAMBIO BTG-013: Nuevos servicios ---
+    // (Relacionado con BTG-013)
     private val collectionService: CollectionService = CollectionService()
-
-    // --- CAMBIO BTG-013: Patrón Observador ---
-    // El motor del juego (MiJuego) es el "Sujeto" (o tiene uno).
-    private val eventManager: Subject = Subject()
-    // El "Observador" que desbloquea habilidades.
-    private lateinit var abilityUnlocker: AbilityUnlocker
-
+    // (Relacionado con BTG-007)
+    private val levelLoader: LevelLoader = LevelLoader()
+    
+    // --- PATRÓN OBSERVADOR (BTG-013) ---
+    private val subject: Subject = Subject()
+    private lateinit var abilityUnlocker: AbilityUnlocker // Se inicializa en loadLevel
 
     /**
-     * Carga el nivel usando el LevelLoader y resetea la posición del jugador.
+     * Carga un nivel e inicializa el estado del juego.
+     * Implementación de la interfaz 'GameLogicService'.
+     *
+     * @param levelName El nombre del archivo (ej. "level1.txt").
      */
     override fun loadLevel(levelName: String) {
-        val loader = LevelLoader()
-        levelData = loader.loadLevel(levelName)
-        originalPlayerStart = levelData!!.playerStart.copy() // Guarda la posición de inicio
-        
-        // --- CAMBIO BTG-013: Configuración del Observador ---
-        // Se crea el observador y se le pasa la referencia al jugador
-        abilityUnlocker = AbilityUnlocker(player, fragmentThreshold = 3)
-        // Se registra el observador en el "Subject" (eventManager)
-        eventManager.addObserver(abilityUnlocker)
-
+        // (Relacionado con BTG-007)
+        levelData = levelLoader.loadLevel(levelName)
+        originalPlayerStart = levelData!!.playerStart.copy()
         resetPlayerPosition()
+        
+        // (Relacionado con BTG-012)
+        lives = 3
+        gameState = GameState.Playing
+
+        // --- Configuración del Patrón Observador (BTG-013) ---
+        // 1. Crear el observador
+        abilityUnlocker = AbilityUnlocker(player, 3)
+        // 2. Registrar el observador en el sujeto
+        subject.addObserver(abilityUnlocker)
     }
 
     /**
-     * Resetea la posición, velocidad y estado del jugador.
+     * Resetea la posición del jugador al inicio del nivel.
+     * (POO: Encapsulamiento) Lógica interna reutilizada.
      */
     private fun resetPlayerPosition() {
         player.position = originalPlayerStart.copy()
         player.velocity = Vector2D(0f, 0f)
-        player.isOnGround = false
+        // (Relacionado con BTG-012)
+        invincibilidadTimer = 1.5f // Da 1.5s de inmunidad al reaparecer
     }
 
     /**
-     * Reinicia el juego al estado inicial (vidas, estado, enemigos).
-     */
-    private fun restartGame() {
-        lives = 3
-        gameState = GameState.Playing
-        // Revive a todos los enemigos
-        levelData?.enemies?.forEach { it.isAlive = true }
-        
-        // --- CAMBIO BTG-013: Resetear estado del jugador ---
-        // Resetea fragmentos y habilidades al reiniciar
-        player.energyFragments = 0
-        player.canDoubleJump = false
-        player.hasDoubleJumped = false
-        // Resetea coleccionables
-        levelData?.collectibles?.forEach { it.isCollected = false }
-
-        // Vuelve a registrar el observador (por si acaso, aunque no es estrictamente necesario aquí)
-        eventManager.removeObserver(abilityUnlocker) // Limpia
-        abilityUnlocker = AbilityUnlocker(player, fragmentThreshold = 3) // Crea uno nuevo
-        eventManager.addObserver(abilityUnlocker) // Registra
-
-        resetPlayerPosition()
-    }
-
-    /**
-     * Este es el BUCLE PRINCIPAL DEL JUEGO. Se llama en cada fotograma.
-     * Orquesta todas las actualizaciones.
+     * El bucle de actualización principal del juego.
+     * Implementación de la interfaz 'GameLogicService'.
+     *
+     * ---
+     * @see "Issue BTG-008: Bucle de Juego y Gestión de Estado."
+     * ---
+     *
+     * @param actions El Set de acciones abstractas del usuario.
+     * @param deltaTime El tiempo pasado desde el último fotograma.
      */
     override fun update(actions: Set<GameAction>, deltaTime: Float) {
-        val currentLevel = levelData ?: return // Si el nivel no está cargado, no hacer nada
+        // La lógica del juego solo se ejecuta si estamos en estado 'Playing'
+        if (gameState == GameState.Playing) {
+            
+            // 1. --- MANEJO DE ENTRADA (Input) ---
+            handleInput(actions)
 
-        // Si el juego está en Game Over, solo escucha la acción de reiniciar (SWITCH_DIMENSION)
-        if (gameState == GameState.GameOver) {
+            // 2. --- ACTUALIZACIÓN DE TEMPORIZADORES ---
+            updateTimers(deltaTime)
+
+            // 3. --- LÓGICA DE FÍSICA (Jugador y Enemigos) ---
+            // (Relacionado con BTG-010)
+            val allPlatforms = levelData?.platforms ?: emptyList()
+            // (Relacionado con BTG-006, BTG-009, BTG-013)
+            physicsService.update(player, allPlatforms, currentDimension, deltaTime)
+            
+            // (Relacionado con BTG-011)
+            levelData?.enemies?.filter { it.isAlive }?.forEach { enemy ->
+                enemyPhysicsService.update(enemy, allPlatforms, deltaTime)
+            }
+
+            // 4. --- LÓGICA DE IA (Enemigos) ---
+            // (Relacionado con BTG-011)
+            levelData?.enemies?.filter { it.isAlive }?.forEach { enemy ->
+                enemy.updateAI(allPlatforms)
+            }
+
+            // 5. --- LÓGICA DE COLISIONES (Combate y Coleccionables) ---
+            handleCollisions()
+
+        } else if (gameState == GameState.GameOver) {
+            // (Relacionado con BTG-012) Si es Game Over, solo escucha la tecla de reinicio
             if (GameAction.SWITCH_DIMENSION in actions) {
-                restartGame()
-            }
-            return // No procesar nada más
-        }
-
-        // --- ACTUALIZACIÓN DE ESTADO (TIMERS) ---
-        invincibilidadTimer = (invincibilidadTimer - deltaTime).coerceAtLeast(0f)
-        player.attackTimer = (player.attackTimer - deltaTime).coerceAtLeast(0f)
-
-        // --- LÓGICA DE DIMENSIÓN ---
-        handleDimensionSwitch(actions)
-
-        // --- LÓGICA DE ENTRADA (ACCIONES) ---
-        handlePlayerActions(actions)
-        handleAttackLogic(actions)
-
-        // --- FÍSICA Y COLISIONES ---
-        physicsService.update(player, currentLevel.platforms, currentDimension, deltaTime)
-
-        // --- IA Y FÍSICA DE ENEMIGOS ---
-        currentLevel.enemies.forEach { enemy ->
-            if (enemy.isAlive) {
-                enemy.updateAI(currentLevel.platforms)
-                enemyPhysicsService.update(enemy, currentLevel.platforms, deltaTime)
+                loadLevel("level1.txt") // Reinicia el juego
             }
         }
+    }
 
-        // --- COMBATE ---
+    /**
+     * Procesa las acciones del usuario.
+     * (POO: Encapsulamiento) Lógica extraída de 'update'.
+     */
+    private fun handleInput(actions: Set<GameAction>) {
+        // --- Movimiento (BTG-006) ---
+        player.velocity.x = 0f
+        if (GameAction.MOVE_LEFT in actions) {
+            player.velocity.x = -Player.MOVE_SPEED
+            player.facingDirection = -1f
+        }
+        if (GameAction.MOVE_RIGHT in actions) {
+            player.velocity.x = Player.MOVE_SPEED
+            player.facingDirection = 1f
+        }
+
+        // --- Salto (BTG-006) y Doble Salto (BTG-013) ---
+        val jumpPressed = GameAction.JUMP in actions
+        if (jumpPressed && !jumpKeyWasPressed) { // Detectar "flanco de subida" (solo al presionar)
+            if (player.isOnGround) {
+                // Salto normal
+                player.velocity.y = Player.JUMP_STRENGTH
+                player.isOnGround = false
+                player.hasDoubleJumped = false // Resetea el doble salto
+            } else if (player.canDoubleJump && !player.hasDoubleJumped) {
+                // Doble salto (BTG-013)
+                player.velocity.y = Player.JUMP_STRENGTH * 0.9f // Un poco menos fuerte
+                player.hasDoubleJumped = true
+            }
+        }
+        jumpKeyWasPressed = jumpPressed // Guarda el estado para el próximo fotograma
+
+        // --- Cambio de Dimensión (BTG-009) ---
+        val switchPressed = GameAction.SWITCH_DIMENSION in actions
+        if (switchPressed && !switchKeyWasPressed) { // Detectar "flanco de subida"
+            currentDimension = if (currentDimension == Dimension.A) Dimension.B else Dimension.A
+        }
+        switchKeyWasPressed = switchPressed // Guarda el estado
+
+        // --- Ataque (BTG-012) ---
+        if (GameAction.ATTACK in actions && player.attackTimer <= 0f) { // Solo si el cooldown terminó
+            player.isAttacking = true
+            player.attackTimer = Player.ATTACK_COOLDOWN // Inicia el temporizador de cooldown
+            player.hitEnemiesThisAttack.clear() // Limpia la lista de enemigos golpeados
+        }
+    }
+
+    /**
+     * Actualiza todos los temporizadores del juego.
+     * (POO: Encapsulamiento) Lógica extraída de 'update'.
+     */
+    private fun updateTimers(deltaTime: Float) {
+        // --- Temporizador de Invencibilidad (BTG-012) ---
+        if (invincibilidadTimer > 0f) {
+            invincibilidadTimer -= deltaTime
+        }
+
+        // --- Temporizador de Ataque (BTG-012) ---
+        if (player.attackTimer > 0f) {
+            player.attackTimer -= deltaTime
+            
+            // Duración del hitbox activo
+            if (player.isAttacking && player.attackTimer <= (Player.ATTACK_COOLDOWN - Player.ATTACK_DURATION)) {
+                player.isAttacking = false // El hitbox desaparece
+            }
+
+            if (player.attackTimer <= 0f) {
+                player.isAttacking = false // Asegura que se apague
+            }
+        }
+    }
+
+    /**
+     * Maneja las colisiones de combate y recolección.
+     * (POO: Encapsulamiento) Lógica extraída de 'update'.
+     */
+    private fun handleCollisions() {
+        val allEnemies = levelData?.enemies ?: emptyList()
+        val allCollectibles = levelData?.collectibles ?: emptyList()
+
+        // --- Lógica de Combate (BTG-012) ---
+        
+        // 1. Comprobar si el JUGADOR golpea a un ENEMIGO
         if (player.isAttacking) {
-            val hitEnemies = combatService.checkPlayerAttack(player, currentLevel.enemies, currentDimension)
-            hitEnemies.forEach { enemy ->
-                if (player.hitEnemiesThisAttack.add(enemy)) {
-                    enemy.isAlive = false // Mata al enemigo
+            val hitEnemies = combatService.checkPlayerAttack(player, allEnemies, currentDimension)
+            for (enemy in hitEnemies) {
+                // Evita golpear al mismo enemigo dos veces en un solo ataque
+                if (!player.hitEnemiesThisAttack.contains(enemy)) {
+                    enemy.isAlive = false // Enemigo muere
+                    player.hitEnemiesThisAttack.add(enemy)
                 }
             }
         }
-        if (invincibilidadTimer <= 0) {
-            if (combatService.checkEnemyDamage(player, currentLevel.enemies, currentDimension)) {
-                handlePlayerDamage()
+
+        // 2. Comprobar si un ENEMIGO golpea al JUGADOR
+        // (Solo si no es invencible)
+        if (invincibilidadTimer <= 0f) {
+            if (combatService.checkPlayerDamage(player, allEnemies, currentDimension)) {
+                handlePlayerHit()
             }
         }
-        
-        // --- CAMBIO BTG-013: Lógica de Colección ---
-        handleCollection(currentLevel.collectibles)
-    }
 
-    /**
-     * Maneja la lógica de cambio de dimensión, incluyendo el "cooldown"
-     * para evitar cambios rápidos.
-     */
-    private fun handleDimensionSwitch(actions: Set<GameAction>) {
-        if (GameAction.SWITCH_DIMENSION in actions) {
-            if (!switchKeyWasPressed) {
-                currentDimension = if (currentDimension == Dimension.A) Dimension.B else Dimension.A
-            }
-            switchKeyWasPressed = true
-        } else {
-            switchKeyWasPressed = false
-        }
-    }
-
-    /**
-     * Traduce las acciones (JUMP, MOVE) en cambios de velocidad del jugador.
-     */
-    private fun handlePlayerActions(actions: Set<GameAction>) {
-        // Movimiento Horizontal
-        if (GameAction.MOVE_LEFT in actions) {
-            player.velocity.x = -Player.MOVE_SPEED
-            player.facingDirection = -1f // Mira a la izquierda
-        } else if (GameAction.MOVE_RIGHT in actions) {
-            player.velocity.x = Player.MOVE_SPEED
-            player.facingDirection = 1f // Mira a la derecha
-        } else {
-            player.velocity.x = 0f // No hay acción, se detiene
-        }
-
-        // --- CAMBIO BTG-013: Lógica de Salto y Doble Salto ---
-        val jumpPressed = GameAction.JUMP in actions
-        
-        // Comprueba si la tecla fue "recién presionada"
-        if (jumpPressed && !jumpKeyWasPressed) { 
-            if (player.isOnGround) {
-                // 1. Salto normal desde el suelo
-                player.velocity.y = Player.JUMP_STRENGTH
-                player.isOnGround = false // Importante: evita re-salto
-            } else if (player.canDoubleJump && !player.hasDoubleJumped) {
-                // 2. Doble salto (si está en el aire, tiene la habilidad y no la ha usado)
-                player.velocity.y = Player.JUMP_STRENGTH // (Se puede usar una fuerza diferente si se desea)
-                player.hasDoubleJumped = true // Marca que ya usó el doble salto
-            }
-        }
-        
-        jumpKeyWasPressed = jumpPressed // Actualiza el estado de la tecla para el próximo frame
-    }
-
-    /**
-     * Maneja la lógica de inicio y fin del estado de ataque.
-     */
-    private fun handleAttackLogic(actions: Set<GameAction>) {
-        if (player.attackTimer <= (Player.ATTACK_COOLDOWN - Player.ATTACK_DURATION)) {
-            player.isAttacking = false 
-        }
-
-        if (GameAction.ATTACK in actions && player.attackTimer <= 0) {
-            player.isAttacking = true
-            player.attackTimer = Player.ATTACK_COOLDOWN
-            player.hitEnemiesThisAttack.clear()
-        }
-    }
-    
-    /**
-     * --- NUEVO BTG-013 ---
-     * Llama al CollectionService y actualiza el estado del jugador.
-     * Notifica al "Subject" (eventManager) si se recoge un ítem.
-     */
-    private fun handleCollection(collectibles: List<Collectible>) {
-        val collectedItems = collectionService.checkCollectibleCollisions(player, collectibles)
-        
+        // --- Lógica de Coleccionables (BTG-013) ---
+        val collectedItems = collectionService.checkCollectibleCollisions(player, allCollectibles)
         for (item in collectedItems) {
-            // Comprueba si ya fue recogido (doble chequeo por seguridad)
-            if (!item.isCollected) { 
-                item.isCollected = true
-                player.energyFragments += item.value
-                
-                // --- PATRÓN OBSERVADOR: Notificar ---
-                // "Publica" el evento. No sabe (ni le importa)
-                // quién está escuchando.
-                eventManager.notify(PlayerEvent.ENERGY_COLLECTED)
-            }
+            item.isCollected = true // Marca como recogido
+            player.energyFragments += item.value // Suma al contador
+            
+            // --- Notificar al Patrón Observador (BTG-013) ---
+            subject.notify(PlayerEvent.ENERGY_COLLECTED)
         }
     }
 
     /**
-     * Gestiona lo que ocurre cuando el jugador recibe daño.
+     * Maneja la lógica de cuando el jugador es golpeado.
+     * (POO: Encapsulamiento)
+     *
+     * ---
+     * @see "Issue BTG-012: Vidas y Game Over."
+     * ---
      */
-    private fun handlePlayerDamage() {
-        lives -= 1
-        invincibilidadTimer = 2.0f // 2 segundos de invencibilidad
+    private fun handlePlayerHit() {
+        lives -= 1 // Pierde una vida
+        
         if (lives <= 0) {
             gameState = GameState.GameOver // Se acabó el juego
         } else {
-            resetPlayerPosition() // Resetea al inicio del nivel
+            resetPlayerPosition() // Resetea al inicio del nivel con invencibilidad
         }
     }
 
     /**
      * Crea el "snapshot" de solo lectura del estado del mundo.
      * Este es el objeto que se envía al RenderService.
+     * (POO: Encapsulamiento) Oculta la lógica interna, solo expone datos.
+     *
+     * ---
+     * @see "Issue BTG-002: Arquitectura (WorldState)."
+     * @see "Issue BTG-008: Bucle de Juego."
+     * ---
      */
     override fun getWorldState(): WorldState {
         return WorldState(
             player = this.player,
             platforms = levelData?.platforms ?: emptyList(),
+            // (Relacionado con BTG-012) Solo pasa enemigos vivos al renderizador
             enemies = levelData?.enemies?.filter { it.isAlive } ?: emptyList(),
             
-            // --- CAMBIO BTG-013: Pasa la lista de coleccionables ---
+            // (Relacionado con BTG-013) Pasa la lista de coleccionables
             // El renderizador se encargará de filtrar los ya recogidos
             collectibles = levelData?.collectibles ?: emptyList(),
             
             currentDimension = this.currentDimension,
+            // (Relacionado con BTG-012)
             playerInvincible = invincibilidadTimer > 0,
             isPlayerAttacking = player.isAttacking,
             playerFacingDirection = player.facingDirection
         )
     }
     
-    // --- Getters públicos requeridos por la interfaz ---
+    // --- Getters públicos requeridos por la interfaz 'GameLogicService' ---
     
     override fun getPlayer(): Player = player
     override fun getLevelData(): LevelData? = levelData

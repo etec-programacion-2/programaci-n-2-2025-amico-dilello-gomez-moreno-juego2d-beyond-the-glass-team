@@ -2,6 +2,13 @@ package org.example.core
 
 /**
  * Data class que almacena TODO el estado del jugador (Modelo).
+ * No tiene lógica, solo datos.
+ *
+ * ---
+ * @see "Issue BTG-006: Modelo de Jugador y Movimiento Básico."
+ * @see "Issue BTG-012: Estado de Combate (facingDirection, isAttacking, etc.)."
+ * @see "Issue BTG-013: Habilidades Progresivas (energyFragments, canDoubleJump, etc.)."
+ * ---
  *
  * @param position Posición actual (x, y).
  * @param size Tamaño (ancho, alto).
@@ -21,13 +28,13 @@ data class Player(
     var velocity: Vector2D = Vector2D(0f, 0f),
     var isOnGround: Boolean = false,
 
-    // --- ESTADO DE COMBATE ---
+    // --- ESTADO DE COMBATE (BTG-012) ---
     var facingDirection: Float = 1f, // 1f = Derecha, -1f = Izquierda
     var isAttacking: Boolean = false,
     var attackTimer: Float = 0f, // Temporizador para gestionar la duración y el cooldown
     var hitEnemiesThisAttack: MutableSet<Enemy> = mutableSetOf(),
 
-    // --- CAMBIO BTG-013: Habilidades Progresivas ---
+    // --- HABILIDADES PROGRESIVAS (BTG-013) ---
     var energyFragments: Int = 0,
     var canDoubleJump: Boolean = false, // Habilidad desbloqueable
     var hasDoubleJumped: Boolean = false // Estado para el salto actual
@@ -38,15 +45,15 @@ data class Player(
      * y el combate del jugador.
      */
     companion object {
-        // Constantes de Física
+        // --- Constantes de Física (BTG-006, BTG-010) ---
         const val MOVE_SPEED = 250.0f
         const val JUMP_STRENGTH = 600.0f
         const val GRAVITY = 1800.0f
         const val MAX_FALL_SPEED = -800.0f
 
-        // Constantes de Combate
-        const val ATTACK_DURATION = 0.2f  // Duración del hitbox activo
-        const val ATTACK_COOLDOWN = 0.5f  // Tiempo total antes de poder atacar de nuevo
-        val ATTACK_HITBOX = Vector2D(37.5f, 64f) // Tamaño del área de ataque (3/4)
+        // --- Constantes de Combate (BTG-012) ---
+        const val ATTACK_DURATION = 0.2f // Duración del hitbox activo
+        const val ATTACK_COOLDOWN = 0.5f // Tiempo total entre ataques
+        val ATTACK_HITBOX = Vector2D(40f, 64f) // Tamaño del hitbox
     }
 }

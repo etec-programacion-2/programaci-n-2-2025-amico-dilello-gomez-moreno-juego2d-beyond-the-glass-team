@@ -1,8 +1,14 @@
 package org.example.core
 
 /**
- * Servicio dedicado a manejar la física de los enemigos (SOLID: Principio de Responsabilidad Única).
+ * Servicio dedicado a manejar la física de los enemigos
+ * (SOLID: Principio de Responsabilidad Única).
  * Está separado del PhysicsService del jugador.
+ *
+ * ---
+ * @see "Issue BTG-010: Física y Colisiones."
+ * @see "Issue BTG-011: Movimiento de Enemigos."
+ * ---
  */
 class EnemyPhysicsService {
 
@@ -18,7 +24,7 @@ class EnemyPhysicsService {
         // 1. Aplicar gravedad
         applyGravity(enemy, deltaTime)
         
-        // --- CAMBIO 1: Física consciente de la dimensión ---
+        // --- Relacionado con BTG-009: Física consciente de la dimensión ---
         // Pasa la dimensión del PROPIO enemigo a los métodos de colisión.
         
         // 2. Mover y colisionar en X
@@ -32,49 +38,49 @@ class EnemyPhysicsService {
 
     /**
      * Aplica la fuerza de gravedad a la velocidad vertical del enemigo.
+     * (POO: Encapsulamiento) Privado.
      */
     private fun applyGravity(enemy: Enemy, deltaTime: Float) {
         if (enemy.velocity.y < Enemy.MAX_FALL_SPEED) {
             enemy.velocity.y = Enemy.MAX_FALL_SPEED
         }
+        // Aplicar gravedad
         enemy.velocity.y -= Enemy.GRAVITY * deltaTime
     }
 
     /**
-     * Resuelve colisiones en el eje X (paredes).
-     * IMPORTANTE: Esta física también incluye la IA de patrulla. Si choca,
-     * invierte su dirección de patrulla.
+     * Resuelve colisiones horizontales (paredes) para un enemigo.
+     * (POO: Encapsulamiento) Privado.
+     *
+     * @param dimension La dimensión del enemigo (para filtrar plataformas).
      */
     private fun resolveCollisionsX(enemy: Enemy, platforms: List<Platform>, dimension: Dimension) {
-        
-        // --- CAMBIO 1: Física consciente de la dimensión ---
+        // --- Relacionado con BTG-009: Física consciente de la dimensión ---
         // Filtra las plataformas para colisionar solo con las de la dimensión del enemigo.
         val tangiblePlatforms = platforms.filter { it.tangibleInDimension == dimension }
-        
+
         for (platform in tangiblePlatforms) {
             if (isColliding(enemy, platform)) {
-                if (enemy.velocity.x > 0) { // Moviéndose a la derecha
+                if (enemy.velocity.x > 0) { // Chocando por la derecha
                     enemy.position.x = platform.position.x - enemy.size.x
-                } else if (enemy.velocity.x < 0) { // Moviéndose a la izquierda
+                } else if (enemy.velocity.x < 0) { // Chocando por la izquierda
                     enemy.position.x = platform.position.x + platform.size.x
                 }
-                
-                // --- IA DE PATRULLA ---
-                // Al chocar con una pared, invierte su dirección.
-                enemy.direction *= -1f 
                 enemy.velocity.x = 0f
             }
         }
     }
 
     /**
-     * Resuelve colisiones en el eje Y (suelo y techo).
-     * Actualiza el estado 'isOnGround'.
+     * Resuelve colisiones verticales (suelo, techo) para un enemigo.
+     * (POO: Encapsulamiento) Privado.
+     *
+     * @param dimension La dimensión del enemigo (para filtrar plataformas).
      */
     private fun resolveCollisionsY(enemy: Enemy, platforms: List<Platform>, dimension: Dimension) {
-        enemy.isOnGround = false // Asumir que está en el aire
+        enemy.isOnGround = false
         
-        // --- CAMBIO 1: Física consciente de la dimensión ---
+        // --- Relacionado con BTG-009: Física consciente de la dimensión ---
         // Filtra las plataformas para colisionar solo con las de la dimensión del enemigo.
         val tangiblePlatforms = platforms.filter { it.tangibleInDimension == dimension }
 
@@ -94,11 +100,11 @@ class EnemyPhysicsService {
 
     /**
      * Comprobación de colisión AABB (Axis-Aligned Bounding Box).
-     * (Este método no necesita cambios, ya que opera sobre listas ya filtradas).
+     * (POO: Encapsulamiento) Privado.
      */
     private fun isColliding(enemy: Enemy, platform: Platform): Boolean {
-        // Nota: Esta colisión asume que el enemigo SÍ puede chocar con plataformas
-        // de otra dimensión (porque no filtra por dimensión).
+        // Esta colisión genérica funciona porque la lista 'platforms'
+        // que se le pasa a los métodos 'resolve' ya ha sido filtrada.
         return enemy.position.x < platform.position.x + platform.size.x &&
                enemy.position.x + enemy.size.x > platform.position.x &&
                enemy.position.y < platform.position.y + platform.size.y &&

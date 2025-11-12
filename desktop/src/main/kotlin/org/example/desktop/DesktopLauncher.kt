@@ -6,6 +6,10 @@ import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration
 /**
  * Punto de entrada (`main`) de la aplicación de escritorio.
  * Su única responsabilidad es configurar y lanzar la ventana de LibGDX.
+ *
+ * ---
+ * @see "Issue BTG-001: Configuración del proyecto multi-módulo (desktop)."
+ * ---
  */
 fun main() {
     // Configuración de la ventana

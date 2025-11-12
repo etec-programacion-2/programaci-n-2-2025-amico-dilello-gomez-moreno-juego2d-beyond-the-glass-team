@@ -1,4 +1,11 @@
 # Esto es un archivo de nivel. Las líneas que inician con # o están vacías se ignoran.
+# Este archivo es la fuente de datos para el LevelLoader (Issue BTG-007).
+# La definición de las entidades aquí alimenta varias issues:
+# P_START: Define el inicio del jugador (BTG-006)
+# PLATFORM: Define las plataformas y su dimensión (BTG-009)
+# ENEMY: Define los enemigos y su dimensión (BTG-011)
+# COLLECTIBLE: Define los fragmentos de energía (BTG-013)
+
 
 # POSICIÓN INICIAL DEL JUGADOR (x, y)
 P_START, 50, 50

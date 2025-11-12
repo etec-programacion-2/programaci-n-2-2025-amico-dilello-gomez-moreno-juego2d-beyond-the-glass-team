@@ -3,7 +3,12 @@ package org.example.core
 /**
  * Una clase sellada (sealed class) para representar los diferentes estados
  * posibles del juego (Máquina de Estados).
- * Es más robusto que un 'enum' porque los estados pueden contener datos.
+ * Es más robusto que un 'enum' porque los estados pueden contener datos (aunque aquí no lo hagan).
+ *
+ * ---
+ * @see "Issue BTG-008: Bucle de Juego y Gestión de Estado."
+ * @see "Issue BTG-012: Estado 'GameOver'."
+ * ---
  */
 sealed class GameState {
     object Menu : GameState()       // Estado de Menú Principal
