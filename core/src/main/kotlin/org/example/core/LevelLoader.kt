@@ -30,6 +30,9 @@ class LevelLoader {
         // (Relacionado con BTG-013)
         val collectibles = mutableListOf<Collectible>()
         var playerStart: Vector2D? = null // Se usa '?' porque aún no se ha leído
+        
+        /** (NUEVO) Variable para la puerta de salida (solo puede haber una). */
+        var exitGate: LevelExit? = null
 
         // Obtiene el archivo desde la carpeta 'resources' del classpath
         val inputStream: InputStream? = LevelLoader::class.java.classLoader.getResourceAsStream(fileName)
@@ -85,6 +88,15 @@ class LevelLoader {
                                 )
                             )
                         }
+                        
+                        /** (NUEVO) Lógica para parsear la puerta de salida. */
+                        "EXIT" -> {
+                            exitGate = LevelExit(
+                                position = Vector2D(parts[1].trim().toFloat(), parts[2].trim().toFloat()),
+                                size = Vector2D(parts[3].trim().toFloat(), parts[4].trim().toFloat()),
+                                condition = WinCondition.valueOf(parts[5].trim()) // Convierte "ALL_ENEMIES_KILLED"
+                            )
+                        }
                     }
                 } catch (e: Exception) {
                     // Manejo de error si una línea está mal formateada
@@ -101,7 +113,8 @@ class LevelLoader {
             playerStart = playerStart!!, // '!!' es seguro gracias al 'require' anterior
             platforms = platforms,
             enemies = enemies,
-            collectibles = collectibles
+            collectibles = collectibles,
+            exitGate = exitGate // (NUEVO) Añade la puerta
         )
     }
 }

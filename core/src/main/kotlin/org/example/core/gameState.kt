@@ -15,4 +15,7 @@ sealed class GameState {
     object Playing : GameState()    // Estado de Jugando
     object Paused : GameState()     // Estado de Pausa
     object GameOver : GameState()   // Estado de Fin de Juego
+    
+    /** (NUEVO) Estado para cuando el jugador gana el juego. */
+    object GameWon : GameState()
 }

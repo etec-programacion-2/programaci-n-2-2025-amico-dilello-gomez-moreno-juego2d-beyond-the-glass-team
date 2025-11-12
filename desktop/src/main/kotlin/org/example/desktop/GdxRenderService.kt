@@ -36,6 +36,10 @@ class GdxRenderService(private val shapeRenderer: ShapeRenderer) : RenderService
     // --- Relacionado con BTG-013: Color para coleccionables ---
     private val collectibleColor = Color.YELLOW
     
+    // --- (NUEVO) Colores para la Puerta de Salida ---
+    private val exitColorLocked = Color.PURPLE
+    private val exitColorUnlocked = Color.CYAN
+    
     // Variable para el efecto de parpadeo (blink)
     // --- Relacionado con BTG-012: Feedback de invencibilidad ---
     private var blink: Boolean = false
@@ -101,6 +105,7 @@ class GdxRenderService(private val shapeRenderer: ShapeRenderer) : RenderService
             shapeRenderer.rect(enemy.position.x, enemy.position.y, enemy.size.x, enemy.size.y)
         }
         
+        // 8. Dibujar Coleccionables
         // --- Relacionado con BTG-013: Dibujar Coleccionables ---
         shapeRenderer.color = collectibleColor
         // Filtra los que ya han sido recogidos (el 'core' pasa todos)
@@ -108,7 +113,18 @@ class GdxRenderService(private val shapeRenderer: ShapeRenderer) : RenderService
             shapeRenderer.rect(collectible.position.x, collectible.position.y, collectible.size.x, collectible.size.y)
         }
 
-        // 8. Finalizar el dibujado de formas
+        // 9. (NUEVO) Dibujar Puerta de Salida
+        worldState.levelExit?.let { exit ->
+            // Elige el color basado en si está desbloqueada
+            shapeRenderer.color = if (worldState.isExitUnlocked) {
+                exitColorUnlocked
+            } else {
+                exitColorLocked
+            }
+            shapeRenderer.rect(exit.position.x, exit.position.y, exit.size.x, exit.size.y)
+        }
+
+        // 10. Finalizar el dibujado de formas
         shapeRenderer.end()
         // Desactivar 'blending'
         Gdx.gl.glDisable(GL20.GL_BLEND)

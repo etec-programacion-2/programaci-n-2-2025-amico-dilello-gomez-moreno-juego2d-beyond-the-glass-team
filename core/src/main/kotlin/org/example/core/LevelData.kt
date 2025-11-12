@@ -13,5 +13,8 @@ data class LevelData(
     val playerStart: Vector2D, // (Relacionado con BTG-006)
     val platforms: List<Platform>, // (Relacionado con BTG-009)
     val enemies: List<Enemy>, // (Relacionado con BTG-011)
-    val collectibles: List<Collectible> // (Relacionado con BTG-013)
+    val collectibles: List<Collectible>, // (Relacionado con BTG-013)
+    
+    /** (NUEVO) La puerta de salida del nivel, si existe. */
+    val exitGate: LevelExit?
 )

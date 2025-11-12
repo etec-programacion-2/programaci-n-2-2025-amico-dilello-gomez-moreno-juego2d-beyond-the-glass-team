@@ -6,22 +6,23 @@
 # ENEMY: Define los enemigos y su dimensión (BTG-011)
 # COLLECTIBLE: Define los fragmentos de energía (BTG-013)
 
+# Requisito: Matar a todos los enemigos.
 
-# POSICIÓN INICIAL DEL JUGADOR (x, y)
+# Posicion inicial del jugador (x, y)
 P_START, 50, 50
 
-# PLATAFORMAS (x, y, ancho, alto, dimension(A/B))
+# Plataformas (x, y, ancho, alto, dimension(A/B))
 PLATFORM, 0, 0, 800, 50, A
 PLATFORM, 0, 0, 800, 50, B
 PLATFORM, 180, 120, 100, 20, A
 PLATFORM, 350, 200, 100, 20, A
 PLATFORM, 520, 280, 100, 20, B
+PLATFORM, 700, 50, 100, 20, A
+PLATFORM, 700, 50, 100, 20, B
 
-# ENEMIGOS (x, y, ancho, alto, dimension(A/B))
+# Enemigos (x, y, ancho, alto, dimension(A/B))
 ENEMY, 350, 220, 32, 32, A
 ENEMY, 520, 300, 32, 32, B
 
-# COLECCIONABLES (x, y, ancho, alto, valor)
-COLLECTIBLE, 435, 400, 15, 15, 1
-COLLECTIBLE, 605, 400, 15, 15, 1
-COLLECTIBLE, 165, 240, 15, 15, 1
+# Salida (Se desbloquea al matar a los enemigos)
+EXIT, 750, 70, 30, 60, ALL_ENEMIES_KILLED

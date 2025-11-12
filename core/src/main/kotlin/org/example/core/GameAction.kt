@@ -17,5 +17,8 @@ enum class GameAction {
     MOVE_RIGHT,
     JUMP,
     SWITCH_DIMENSION,
-    ATTACK // Nueva acción de ataque
+    ATTACK, // Acción de ataque
+    
+    /** (NUEVO) Acción para salir del juego (ej. con la tecla ESC). */
+    QUIT
 }

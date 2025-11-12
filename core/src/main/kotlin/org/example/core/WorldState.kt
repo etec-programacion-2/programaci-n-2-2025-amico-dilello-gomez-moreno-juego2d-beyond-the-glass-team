@@ -20,6 +20,8 @@ package org.example.core
  * @param playerInvincible 'true' si el jugador está parpadeando (invencible). (BTG-012)
  * @param isPlayerAttacking 'true' si el hitbox de ataque debe dibujarse. (BTG-012)
  * @param playerFacingDirection Hacia dónde mira el jugador (para dibujar el hitbox). (BTG-012)
+ * @param levelExit (NUEVO) La puerta de salida para dibujar.
+ * @param isExitUnlocked (NUEVO) 'true' si la puerta debe dibujarse como "abierta".
  */
 data class WorldState(
     val player: Player,
@@ -32,5 +34,9 @@ data class WorldState(
     // --- Feedback Visual (BTG-012) ---
     // Pasamos el estado de ataque para el feedback visual
     val isPlayerAttacking: Boolean = false,
-    val playerFacingDirection: Float = 1f
+    val playerFacingDirection: Float = 1f,
+    
+    // --- NUEVO: Progresión de Nivel ---
+    val levelExit: LevelExit?,
+    val isExitUnlocked: Boolean
 )

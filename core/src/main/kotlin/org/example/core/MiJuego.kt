@@ -18,7 +18,7 @@ class MiJuego : GameLogicService {
     // (Relacionado con BTG-007)
     private var levelData: LevelData? = null // Datos cargados del nivel (plataformas, enemigos)
     // (Relacionado con BTG-008, BTG-012)
-    private var gameState: GameState = GameState.Playing // Estado actual (Playing, GameOver)
+    private var gameState: GameState = GameState.Playing // Estado actual (Playing, GameOver, GameWon)
     // (Relacionado con BTG-012)
     private var lives: Int = 3
     private var invincibilidadTimer: Float = 0f // Temporizador para cuando el jugador es golpeado
@@ -43,6 +43,9 @@ class MiJuego : GameLogicService {
     // (Relacionado con BTG-007)
     private val levelLoader: LevelLoader = LevelLoader()
     
+    /** (NUEVO) Servicio de Progresión (SOLID: S). */
+    private val progressionService: ProgressionService = ProgressionService()
+    
     // --- PATRÓN OBSERVADOR (BTG-013) ---
     private val subject: Subject = Subject()
     private lateinit var abilityUnlocker: AbilityUnlocker // Se inicializa en loadLevel
@@ -50,24 +53,41 @@ class MiJuego : GameLogicService {
     /**
      * Carga un nivel e inicializa el estado del juego.
      * Implementación de la interfaz 'GameLogicService'.
+     * Esta función ahora resetea el progreso al nivel especificado.
      *
      * @param levelName El nombre del archivo (ej. "level1.txt").
      */
     override fun loadLevel(levelName: String) {
-        // (Relacionado con BTG-007)
-        levelData = levelLoader.loadLevel(levelName)
-        originalPlayerStart = levelData!!.playerStart.copy()
-        resetPlayerPosition()
+        // (NUEVO) Resetea el servicio de progresión para empezar en este nivel
+        progressionService.resetProgress(levelName)
+        
+        // Carga el nivel actual desde el servicio
+        internalLoadLevel(progressionService.getCurrentLevelName())
         
         // (Relacionado con BTG-012)
         lives = 3
-        gameState = GameState.Playing
+        
+        // (NUEVO) Resetea el estado del jugador completamente
+        // Esto es importante para que los coleccionables entre niveles funcionen.
+        player = Player(position = Vector2D(0f, 0f), size = Vector2D(32f, 64f))
 
         // --- Configuración del Patrón Observador (BTG-013) ---
         // 1. Crear el observador
         abilityUnlocker = AbilityUnlocker(player, 3)
         // 2. Registrar el observador en el sujeto
         subject.addObserver(abilityUnlocker)
+    }
+    
+    /**
+     * (NUEVO) Lógica interna para cargar un nivel.
+     * (POO: Encapsulamiento) Evita duplicar código.
+     */
+    private fun internalLoadLevel(levelName: String) {
+        // (Relacionado con BTG-007)
+        levelData = levelLoader.loadLevel(levelName)
+        originalPlayerStart = levelData!!.playerStart.copy()
+        resetPlayerPosition()
+        gameState = GameState.Playing
     }
 
     /**
@@ -93,11 +113,39 @@ class MiJuego : GameLogicService {
      * @param deltaTime El tiempo pasado desde el último fotograma.
      */
     override fun update(actions: Set<GameAction>, deltaTime: Float) {
+        
+        // (NUEVO) El estado 'GameWon' y 'GameOver' ahora escuchan 'QUIT'
+        if (gameState == GameState.GameOver) {
+            // (Relacionado con BTG-012) Si es Game Over, solo escucha la tecla de reinicio
+            if (GameAction.SWITCH_DIMENSION in actions) {
+                // --- CAMBIO: Reiniciar desde el Nivel 1 ---
+                // Al perder, se reinicia el juego completo desde el nivel 1.
+                loadLevel("level1.txt")
+            }
+            // (NUEVO) Permite salir
+            if (GameAction.QUIT in actions) {
+                // El core no puede salir, pero el 'desktop' leerá esta acción
+            }
+            return // No procesar nada más
+        }
+        
+        if (gameState == GameState.GameWon) {
+            // (NUEVO) Permite salir
+            if (GameAction.QUIT in actions) {
+                 // El core no puede salir, pero el 'desktop' leerá esta acción
+            }
+            return // No procesar nada más
+        }
+
         // La lógica del juego solo se ejecuta si estamos en estado 'Playing'
         if (gameState == GameState.Playing) {
             
             // 1. --- MANEJO DE ENTRADA (Input) ---
             handleInput(actions)
+            // (NUEVO) La acción de Salir siempre funciona
+            if (GameAction.QUIT in actions) {
+                // (Desktop leerá esto)
+            }
 
             // 2. --- ACTUALIZACIÓN DE TEMPORIZADORES ---
             updateTimers(deltaTime)
@@ -119,14 +167,9 @@ class MiJuego : GameLogicService {
                 enemy.updateAI(allPlatforms)
             }
 
-            // 5. --- LÓGICA DE COLISIONES (Combate y Coleccionables) ---
+            // 5. --- LÓGICA DE COLISIONES (Combate, Coleccionables, Caídas, Salida) ---
             handleCollisions()
 
-        } else if (gameState == GameState.GameOver) {
-            // (Relacionado con BTG-012) Si es Game Over, solo escucha la tecla de reinicio
-            if (GameAction.SWITCH_DIMENSION in actions) {
-                loadLevel("level1.txt") // Reinicia el juego
-            }
         }
     }
 
@@ -245,19 +288,45 @@ class MiJuego : GameLogicService {
             subject.notify(PlayerEvent.ENERGY_COLLECTED)
         }
         
-        // --- NUEVA LÓGICA: Comprobar si el jugador se cae del mundo ---
+        // --- LÓGICA DE CAÍDA (MODIFICADA POR USUARIO) ---
         // (Solo si no es invencible, para evitar bucles de muerte)
         if (invincibilidadTimer <= 0f) {
-            // Definimos un "límite de caída" (ej. -100 píxeles)
-            // (El piso está en y=0, así que -100 es un margen seguro)
             val deathPlaneY = -100f
             if (player.position.y < deathPlaneY) {
                 println("¡Caída fuera del mundo! Recibiendo daño.")
-                // Reutiliza la misma lógica de "recibir daño" y respawnear
                 handlePlayerHit()
                 return // Salir para no procesar más daño este fotograma
             }
         }
+        
+        // --- (NUEVO) LÓGICA DE PROGRESIÓN DE NIVEL ---
+        val exit = levelData?.exitGate ?: return // Si no hay puerta, no hacer nada
+        
+        // 1. Comprobar si la condición de victoria se cumple (para feedback visual)
+        val isUnlocked = progressionService.isExitConditionMet(levelData)
+        
+        // 2. Comprobar si el jugador TOCA la puerta Y está DESBLOQUEADA
+        if (isUnlocked && isAABBColliding(player.position, player.size, exit.position, exit.size)) {
+            // 3. Comprobar si hay un siguiente nivel
+            if (progressionService.hasNextLevel()) {
+                progressionService.advanceToNextLevel()
+                internalLoadLevel(progressionService.getCurrentLevelName())
+            } else {
+                // ¡No hay más niveles! ¡Juego ganado!
+                gameState = GameState.GameWon
+            }
+        }
+    }
+    
+    /**
+     * (NUEVO) Helper de colisión AABB.
+     * (POO: Encapsulamiento) Privado para uso interno.
+     */
+    private fun isAABBColliding(posA: Vector2D, sizeA: Vector2D, posB: Vector2D, sizeB: Vector2D): Boolean {
+        return posA.x < posB.x + sizeB.x &&
+               posA.x + sizeA.x > posB.x &&
+               posA.y < posB.y + sizeB.y &&
+               posA.y + sizeA.y > posB.y
     }
 
     /**
@@ -289,6 +358,9 @@ class MiJuego : GameLogicService {
      * ---
      */
     override fun getWorldState(): WorldState {
+        // (NUEVO) Comprueba si la salida está desbloqueada
+        val isExitUnlocked = progressionService.isExitConditionMet(levelData)
+    
         return WorldState(
             player = this.player,
             platforms = levelData?.platforms ?: emptyList(),
@@ -303,7 +375,11 @@ class MiJuego : GameLogicService {
             // (Relacionado con BTG-012)
             playerInvincible = invincibilidadTimer > 0,
             isPlayerAttacking = player.isAttacking,
-            playerFacingDirection = player.facingDirection
+            playerFacingDirection = player.facingDirection,
+            
+            // (NUEVO) Pasa los datos de la puerta al RenderService
+            levelExit = levelData?.exitGate,
+            isExitUnlocked = isExitUnlocked
         )
     }
     

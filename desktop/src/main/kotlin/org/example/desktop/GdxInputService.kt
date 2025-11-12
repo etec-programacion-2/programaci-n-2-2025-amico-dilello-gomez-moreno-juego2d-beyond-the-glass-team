@@ -59,6 +59,12 @@ class GdxInputService : InputService {
             actions.add(GameAction.ATTACK)
         }
 
+        // --- (NUEVO) Acción de Salir ---
+        // Salir: ESC
+        if (Gdx.input.isKeyPressed(Input.Keys.ESCAPE)) {
+            actions.add(GameAction.QUIT)
+        }
+
         return actions
     }
 }
