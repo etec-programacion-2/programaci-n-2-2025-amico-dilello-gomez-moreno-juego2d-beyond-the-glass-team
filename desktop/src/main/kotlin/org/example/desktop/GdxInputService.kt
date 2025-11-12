@@ -6,11 +6,16 @@ import org.example.core.GameAction
 import org.example.core.InputService
 
 /**
- * Implementación CONCRETA de la interfaz 'InputService' (del 'core')
- * usando la biblioteca LibGDX.
+ * (MODIFICADO) ESTE ARCHIVO NO SE CAMBIA.
+ * Sigue funcionando exactamente igual.
+ * La tecla ESC sigue mapeada a 'GameAction.QUIT'.
  *
- * Su trabajo es TRADUCIR las teclas físicas de LibGDX (ej. Input.Keys.W)
- * en ACCIONES abstractas del juego (ej. GameAction.JUMP).
+ * El 'core' (MiJuego) y el 'desktop' (DesktopGame) decidirán
+ * qué hacer con esa acción 'QUIT' dependiendo del estado del juego.
+ *
+ * ---
+ * @see "Issue BTG-002: Diseño de la arquitectura de servicios (InputService)."
+ * ---
  */
 class GdxInputService : InputService {
 
@@ -21,12 +26,14 @@ class GdxInputService : InputService {
     /**
      * Devuelve un Set de todas las acciones que están ocurriendo actualmente
      * (teclas presionadas) con la nueva distribución de teclas.
+     * El 'core' (MiJuego) recibe esto y no sabe qué teclas se presionaron.
      */
     override fun getActions(): Set<GameAction> {
         val actions = mutableSetOf<GameAction>()
 
         // --- NUEVA DISTRIBUCIÓN DE TECLAS (WASD + Flechas) ---
 
+        // --- Relacionado con BTG-006: Movimiento y Salto ---
         // Salto: W o Flecha Arriba
         if (Gdx.input.isKeyPressed(Input.Keys.W) || Gdx.input.isKeyPressed(Input.Keys.UP)) {
             actions.add(GameAction.JUMP)
@@ -39,16 +46,25 @@ class GdxInputService : InputService {
         if (Gdx.input.isKeyPressed(Input.Keys.D) || Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
             actions.add(GameAction.MOVE_RIGHT)
         }
+
+        // --- Relacionado con BTG-009: Cambio de Dimensión ---
         // Cambiar Dimensión: Shift (Izquierdo o Derecho)
         if (Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT) || Gdx.input.isKeyPressed(Input.Keys.SHIFT_RIGHT)) {
             actions.add(GameAction.SWITCH_DIMENSION)
         }
+        
+        // --- Relacionado con BTG-012: Sistema de Combate (Ataque) ---
         // Atacar: Espacio
         if (Gdx.input.isKeyPressed(Input.Keys.SPACE)) {
             actions.add(GameAction.ATTACK)
         }
 
-        // Devuelve el conjunto de acciones activas
+        // --- (MODIFICADO) Acción de Salir / Volver al Menú ---
+        // Salir: ESC
+        if (Gdx.input.isKeyPressed(Input.Keys.ESCAPE)) {
+            actions.add(GameAction.QUIT)
+        }
+
         return actions
     }
 }

@@ -3,8 +3,13 @@ package org.example.core
 /**
  * Implementación de un enemigo básico que patrulla (POO: Herencia).
  * Hereda de la clase abstracta Enemy.
+ * (SOLID: L) Es un subtipo de 'Enemy' y puede sustituirlo.
  *
  * IA MEJORADA: Ahora detecta los bordes de las plataformas usando "sensores".
+ *
+ * ---
+ * @see "Issue BTG-011: Implementación de Enemigos (IA)."
+ * ---
  *
  * @param position Posición inicial.
  * @param size Tamaño del enemigo.
@@ -24,6 +29,8 @@ class BasicEnemy(
      * 1. Comprueba si hay suelo delante usando un "sensor" (feeler).
      * 2. Si no hay suelo (detecta un borde), se da la vuelta.
      * 3. Establece su velocidad basada en la dirección de patrulla.
+     *
+     * @param platforms Lista de todas las plataformas del nivel (para IA).
      */
     override fun updateAI(platforms: List<Platform>) {
         
@@ -36,14 +43,14 @@ class BasicEnemy(
             feelerX = position.x + size.x + 1 
         } else { // Moviéndose a la izquierda
             // 1 píxel delante del borde izquierdo
-            feelerX = position.x - 1 
+            feelerX = position.x - 1
         }
-        // 1 píxel debajo de los pies
+        // El "sensor" apunta un píxel por debajo de los pies
         val feelerY = position.y - 1 
 
-        // --- CAMBIO 1: IA consciente de la dimensión ---
         // Comprueba si hay una plataforma en ese punto, pero solo en la
         // dimensión a la que este enemigo pertenece.
+        // --- Relacionado con BTG-009: IA consciente de la dimensión ---
         if (!isPlatformAt(feelerX, feelerY, platforms, this.dimension)) {
             // Si no hay plataforma, ¡es un borde! Darse la vuelta.
             direction *= -1f // Invierte la dirección
@@ -61,7 +68,7 @@ class BasicEnemy(
      */
     private fun isPlatformAt(x: Float, y: Float, platforms: List<Platform>, dimension: Dimension): Boolean {
         
-        // --- CAMBIO 1: IA consciente de la dimensión ---
+        // --- Relacionado con BTG-009: IA consciente de la dimensión ---
         // Filtra la lista de plataformas para considerar solo las que
         // son tangibles en la dimensión de este enemigo.
         val tangiblePlatforms = platforms.filter { it.tangibleInDimension == dimension }

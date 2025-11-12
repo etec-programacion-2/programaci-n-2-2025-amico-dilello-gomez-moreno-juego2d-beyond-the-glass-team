@@ -1,0 +1,19 @@
+# Requisito: Matar a todos los enemigos.
+
+# Posicion inicial del jugador
+P_START, 50, 50
+
+# Plataformas
+PLATFORM, 0, 0, 800, 50, A
+PLATFORM, 0, 0, 800, 50, B
+PLATFORM, 0, 150, 150, 20, A
+PLATFORM, 450, 150, 350, 20, A
+PLATFORM, 500, 250, 100, 20, B
+PLATFORM, 650, 350, 100, 20, A
+
+# Enemigos
+ENEMY, 520, 270, 32, 32, B
+ENEMY, 670, 370, 32, 32, A
+
+# Salida (Se desbloquea al matar a los enemigos)
+EXIT, 750, 370, 30, 60, ALL_ENEMIES_KILLED

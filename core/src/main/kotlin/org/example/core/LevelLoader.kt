@@ -4,8 +4,13 @@ import java.io.InputStream
 import java.lang.IllegalArgumentException
 
 /**
- * Servicio dedicado a cargar y parsear archivos de nivel (SOLID: Principio de Responsabilidad Única).
+ * Servicio dedicado a cargar y parsear archivos de nivel
+ * (SOLID: Principio de Responsabilidad Única).
  * Lee un archivo .txt y lo convierte en un objeto LevelData.
+ *
+ * ---
+ * @see "Issue BTG-007: Implementación de Carga de Niveles."
+ * ---
  */
 class LevelLoader {
 
@@ -19,10 +24,15 @@ class LevelLoader {
     fun loadLevel(fileName: String): LevelData {
         val platforms = mutableListOf<Platform>()
         // La lista es de tipo 'Enemy' (la clase abstracta), pero guardamos
-        // instancias de 'BasicEnemy' (POO: Polimorfismo).
+        // instancias de 'BasicEnemy' (POO: Polimorfismo / SOLID: Liskov).
+        // (Relacionado con BTG-011)
         val enemies = mutableListOf<Enemy>()
+        // (Relacionado con BTG-013)
         val collectibles = mutableListOf<Collectible>()
         var playerStart: Vector2D? = null // Se usa '?' porque aún no se ha leído
+        
+        /** (NUEVO) Variable para la puerta de salida (solo puede haber una). */
+        var exitGate: LevelExit? = null
 
         // Obtiene el archivo desde la carpeta 'resources' del classpath
         val inputStream: InputStream? = LevelLoader::class.java.classLoader.getResourceAsStream(fileName)
@@ -33,54 +43,58 @@ class LevelLoader {
 
         // 'use' asegura que el 'reader' se cierre automáticamente
         inputStream.bufferedReader().use { reader ->
-            // Procesa el archivo línea por línea
-            reader.lineSequence().forEach { line ->
+            reader.forEachLine { line ->
+                // Ignora comentarios y líneas vacías
                 val cleanLine = line.trim()
-                // Ignorar líneas vacías o comentarios (que empiezan con #)
-                if (cleanLine.startsWith("#") || cleanLine.isBlank()) return@forEach
+                if (cleanLine.isEmpty() || cleanLine.startsWith("#")) {
+                    return@forEachLine // (Continúa a la siguiente línea)
+                }
 
-                val parts = cleanLine.split(',') // Parsea por comas
-                val type = parts[0].uppercase().trim() // El tipo de entidad (PLATFORM, ENEMY...)
-                
+                // Parsea la línea
                 try {
-                    // 'when' (switch) para determinar qué tipo de entidad crear
-                    when (type) {
-                        "P_START" -> { // Posición inicial del jugador
+                    val parts = cleanLine.split(",")
+                    when (parts[0].trim()) {
+                        "P_START" -> { // (Relacionado con BTG-006)
                             playerStart = Vector2D(parts[1].trim().toFloat(), parts[2].trim().toFloat())
                         }
-                        "PLATFORM" -> { // Plataforma
-                            // Determina la dimensión (A o B)
-                            val dim = if (parts[5].trim().uppercase() == "A") Dimension.A else Dimension.B
+                        "PLATFORM" -> { // (Relacionado con BTG-009)
                             platforms.add(
                                 Platform(
                                     position = Vector2D(parts[1].trim().toFloat(), parts[2].trim().toFloat()),
                                     size = Vector2D(parts[3].trim().toFloat(), parts[4].trim().toFloat()),
-                                    tangibleInDimension = dim
+                                    tangibleInDimension = Dimension.valueOf(parts[5].trim()) // Convierte "A" a Dimension.A
                                 )
                             )
                         }
-                        "ENEMY" -> { // Enemigo (se instancia un BasicEnemy)
-                            val dim = if (parts[5].trim().uppercase() == "A") Dimension.A else Dimension.B
-                            // Instanciamos BasicEnemy, pero lo guardamos en la List<Enemy> (Polimorfismo)
+                        "ENEMY" -> { // (Relacionado con BTG-011)
+                            // (POO: Polimorfismo) Creamos un 'BasicEnemy' pero lo guardamos como 'Enemy'
                             enemies.add(
                                 BasicEnemy(
                                     position = Vector2D(parts[1].trim().toFloat(), parts[2].trim().toFloat()),
                                     size = Vector2D(parts[3].trim().toFloat(), parts[4].trim().toFloat()),
-                                    dimension = dim
+                                    dimension = Dimension.valueOf(parts[5].trim())
                                 )
                             )
                         }
-                        "COLLECTIBLE" -> { // Coleccionable
+                        "COLLECTIBLE" -> { // (Relacionado con BTG-013)
                             collectibles.add(
                                 Collectible(
                                     position = Vector2D(parts[1].trim().toFloat(), parts[2].trim().toFloat()),
                                     size = Vector2D(parts[3].trim().toFloat(), parts[4].trim().toFloat()),
                                     value = parts[5].trim().toInt(),
                                     
-                                    // --- CAMBIO BTG-013 ---
                                     // Inicializa el coleccionable como "no recogido"
                                     isCollected = false
                                 )
+                            )
+                        }
+                        
+                        /** (NUEVO) Lógica para parsear la puerta de salida. */
+                        "EXIT" -> {
+                            exitGate = LevelExit(
+                                position = Vector2D(parts[1].trim().toFloat(), parts[2].trim().toFloat()),
+                                size = Vector2D(parts[3].trim().toFloat(), parts[4].trim().toFloat()),
+                                condition = WinCondition.valueOf(parts[5].trim()) // Convierte "ALL_ENEMIES_KILLED"
                             )
                         }
                     }
@@ -99,7 +113,8 @@ class LevelLoader {
             playerStart = playerStart!!, // '!!' es seguro gracias al 'require' anterior
             platforms = platforms,
             enemies = enemies,
-            collectibles = collectibles
+            collectibles = collectibles,
+            exitGate = exitGate // (NUEVO) Añade la puerta
         )
     }
 }

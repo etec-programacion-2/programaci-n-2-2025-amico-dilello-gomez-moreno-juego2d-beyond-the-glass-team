@@ -1,13 +1,24 @@
 package org.example.core
 
 /**
- * Servicio dedicado a manejar la física del JUGADOR (SOLID: Principio de Responsabilidad Única).
+ * Servicio dedicado a manejar la física del JUGADOR
+ * (SOLID: Principio de Responsabilidad Única).
+ *
+ * ---
+ * @see "Issue BTG-010: Física y Colisiones."
+ * @see "Issue BTG-006: Movimiento del Jugador."
+ * ---
  */
 class PhysicsService {
 
     /**
      * El bucle de física del jugador. Se divide en ejes X e Y
      * para colisiones robustas (evita quedarse atascado en las esquinas).
+     *
+     * @param player El jugador a actualizar.
+     * @param platforms La lista de todas las plataformas.
+     * @param currentDimension La dimensión actual (para filtrar plataformas).
+     * @param deltaTime El tiempo desde el último fotograma.
      */
     fun update(player: Player, platforms: List<Platform>, currentDimension: Dimension, deltaTime: Float) {
         // 1. Aplicar fuerzas (solo gravedad por ahora)
@@ -24,6 +35,7 @@ class PhysicsService {
 
     /**
      * Aplica la gravedad a la velocidad vertical del jugador y limita la velocidad de caída.
+     * (POO: Encapsulamiento) Privado.
      */
     private fun applyGravity(player: Player, deltaTime: Float) {
         // Limitar la velocidad de caída
@@ -37,36 +49,45 @@ class PhysicsService {
     /**
      * Comprueba y resuelve colisiones horizontales (paredes).
      * SOLO colisiona con plataformas en la dimensión actual.
+     * (POO: Encapsulamiento) Privado.
+     *
+     * ---
+     * @see "Issue BTG-009: Física consciente de la dimensión."
+     * ---
      */
     private fun resolveCollisionsX(player: Player, platforms: List<Platform>, currentDimension: Dimension) {
-        // Filtra las plataformas: solo importan las tangibles en la dimensión actual
+        // Filtra solo las plataformas tangibles en la dimensión actual
         val tangiblePlatforms = platforms.filter { it.tangibleInDimension == currentDimension }
 
         for (platform in tangiblePlatforms) {
             if (isColliding(player, platform)) {
-                // El jugador se movía hacia la derecha y chocó
+                // Chocando por la derecha
                 if (player.velocity.x > 0) {
                     player.position.x = platform.position.x - player.size.x
-                    player.velocity.x = 0f
                 } 
-                // El jugador se movía hacia la izquierda y chocó
+                // Chocando por la izquierda
                 else if (player.velocity.x < 0) {
                     player.position.x = platform.position.x + platform.size.x
-                    player.velocity.x = 0f
                 }
+                player.velocity.x = 0f
             }
         }
     }
 
     /**
-     * Comprueba y resuelve colisiones verticales (suelo y techo).
-     * Actualiza el estado 'isOnGround'.
+     * Comprueba y resuelve colisiones verticales (suelo, techo).
      * SOLO colisiona con plataformas en la dimensión actual.
+     * (POO: Encapsulamiento) Privado.
+     *
+     * ---
+     * @see "Issue BTG-009: Física consciente de la dimensión."
+     * ---
      */
     private fun resolveCollisionsY(player: Player, platforms: List<Platform>, currentDimension: Dimension) {
-        player.isOnGround = false // Asumir que está en el aire hasta que se demuestre lo contrario
-        
-        // Filtra las plataformas: solo importan las tangibles en la dimensión actual
+        // Asume que no está en el suelo hasta que se demuestre lo contrario
+        player.isOnGround = false
+
+        // Filtra solo las plataformas tangibles en la dimensión actual
         val tangiblePlatforms = platforms.filter { it.tangibleInDimension == currentDimension }
 
         for (platform in tangiblePlatforms) {
@@ -77,7 +98,7 @@ class PhysicsService {
                     player.velocity.y = 0f
                     player.isOnGround = true // ¡Está en el suelo!
 
-                    // --- CAMBIO BTG-013 ---
+                    // --- Relacionado con BTG-013: Doble Salto ---
                     // Al tocar el suelo, se resetea el doble salto.
                     player.hasDoubleJumped = false
                 } 
@@ -93,6 +114,7 @@ class PhysicsService {
     /**
      * Comprobación de colisión AABB (Axis-Aligned Bounding Box).
      * Devuelve true si hay una superposición.
+     * (POO: Encapsulamiento) Privado.
      */
     private fun isColliding(player: Player, platform: Platform): Boolean {
         return player.position.x < platform.position.x + platform.size.x &&

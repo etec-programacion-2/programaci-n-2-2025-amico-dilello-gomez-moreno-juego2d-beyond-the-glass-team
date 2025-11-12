@@ -13,61 +13,75 @@ import org.example.core.Vector2D
  * Implementación CONCRETA de la interfaz 'RenderService' (del 'core')
  * usando el 'ShapeRenderer' de LibGDX.
  *
- * Recibe el 'WorldState' y lo "traduce" a dibujos en pantalla.
+ * (SOLID: D) Es la implementación que cumple el contrato de 'RenderService'.
+ * (SOLID: S) Su ÚNICA responsabilidad es recibir el 'WorldState' y "traducirlo"
+ * a dibujos en pantalla. No contiene lógica de juego.
+ *
+ * ---
+ * @see "Issue BTG-002: Diseño de la arquitectura de servicios (RenderService)."
+ * ---
  *
  * @param shapeRenderer El objeto de LibGDX que dibuja formas (rectángulos, círculos).
  */
 class GdxRenderService(private val shapeRenderer: ShapeRenderer) : RenderService {
 
     // --- Colores predefinidos ---
-    private val ghostColor = Color(1f, 0f, 0f, 0.3f) // Rojo transparente
+    // --- Relacionado con BTG-009: Feedback visual de dimensiones ---
+    private val ghostColor = Color(1f, 0f, 0f, 0.3f) // Rojo transparente (intangible)
     private val solidColor = Color.RED // Rojo sólido
+    
+    // --- Relacionado con BTG-012: Feedback visual de combate ---
     private val attackHitboxColor = Color(1f, 1f, 0f, 0.4f) // Amarillo transparente
     
-    // --- CAMBIO BTG-013: Color para coleccionables ---
+    // --- Relacionado con BTG-013: Color para coleccionables ---
     private val collectibleColor = Color.YELLOW
     
+    // --- (NUEVO) Colores para la Puerta de Salida ---
+    private val exitColorLocked = Color.PURPLE
+    private val exitColorUnlocked = Color.CYAN
+    
     // Variable para el efecto de parpadeo (blink)
+    // --- Relacionado con BTG-012: Feedback de invencibilidad ---
     private var blink: Boolean = false
 
     /**
      * Método central de dibujado. Recibe el 'WorldState' y dibuja todo.
      */
     override fun renderWorld(worldState: WorldState) {
-        // 1. Limpiar la pantalla con un color de fondo oscuro
-        Gdx.gl.glClearColor(0.1f, 0.1f, 0.15f, 1f)
+        // 1. Limpiar la pantalla
+        Gdx.gl.glClearColor(0.1f, 0.1f, 0.1f, 1f)
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT)
 
         // 2. Activar 'blending' (para transparencias)
         Gdx.gl.glEnable(GL20.GL_BLEND)
         Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA)
         
-        // 3. Iniciar el ShapeRenderer
+        // 3. Iniciar el dibujado de formas
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled)
 
         // 4. Dibujar Plataformas
+        // --- Relacionado con BTG-009: Lógica de renderizado de dimensiones ---
         worldState.platforms.forEach { platform ->
-            if (platform.position.y == 20f) {
-                shapeRenderer.color = Color.ROYAL
-            } else if (platform.tangibleInDimension == worldState.currentDimension) {
-                shapeRenderer.color = Color.WHITE
+            if (platform.tangibleInDimension == worldState.currentDimension) {
+                shapeRenderer.color = Color.WHITE // Sólido
             } else {
-                shapeRenderer.color = Color.DARK_GRAY
+                shapeRenderer.color = Color.DARK_GRAY // Fantasma (Intangible)
             }
             shapeRenderer.rect(platform.position.x, platform.position.y, platform.size.x, platform.size.y)
         }
 
         // 5. Dibujar Jugador
-        blink = !blink // Alterna 'blink' en cada fotograma
-        if (worldState.playerInvincible && blink) {
-            // Si está invencible Y 'blink' es true, no se dibuja (efecto parpadeo)
+        // --- Relacionado con BTG-012: Feedback de invencibilidad (parpadeo) ---
+        if (worldState.playerInvincible) {
+            blink = !blink // Alterna el parpadeo
+            shapeRenderer.color = if (blink) Color.WHITE else Color.GRAY
         } else {
-            val player = worldState.player
-            shapeRenderer.color = Color.GREEN
-            shapeRenderer.rect(player.position.x, player.position.y, player.size.x, player.size.y)
+            shapeRenderer.color = Color.GREEN // Color normal
         }
+        shapeRenderer.rect(worldState.player.position.x, worldState.player.position.y, worldState.player.size.x, worldState.player.size.y)
 
-        // 6. Dibujar Hitbox de Ataque (Feedback Visual)
+        // 6. Dibujar Hitbox de Ataque (si está atacando)
+        // --- Relacionado con BTG-012: Feedback visual de combate ---
         if (worldState.isPlayerAttacking) {
             val hitboxPos = worldState.player.position.copy()
             val hitboxSize = Player.ATTACK_HITBOX
@@ -81,23 +95,36 @@ class GdxRenderService(private val shapeRenderer: ShapeRenderer) : RenderService
         }
 
         // 7. Dibujar Enemigos
+        // --- Relacionado con BTG-011: Dibujado de enemigos ---
         worldState.enemies.forEach { enemy ->
             if (enemy.dimension == worldState.currentDimension) {
-                shapeRenderer.color = solidColor
+                shapeRenderer.color = solidColor // Sólido en esta dimensión
             } else {
-                shapeRenderer.color = ghostColor
+                shapeRenderer.color = ghostColor // Fantasma en esta dimensión
             }
             shapeRenderer.rect(enemy.position.x, enemy.position.y, enemy.size.x, enemy.size.y)
         }
         
-        // --- CAMBIO BTG-013: Dibujar Coleccionables ---
+        // 8. Dibujar Coleccionables
+        // --- Relacionado con BTG-013: Dibujar Coleccionables ---
         shapeRenderer.color = collectibleColor
-        // Filtra los que ya han sido recogidos
+        // Filtra los que ya han sido recogidos (el 'core' pasa todos)
         worldState.collectibles.filter { !it.isCollected }.forEach { collectible ->
             shapeRenderer.rect(collectible.position.x, collectible.position.y, collectible.size.x, collectible.size.y)
         }
 
-        // 8. Finalizar el dibujado de formas
+        // 9. (NUEVO) Dibujar Puerta de Salida
+        worldState.levelExit?.let { exit ->
+            // Elige el color basado en si está desbloqueada
+            shapeRenderer.color = if (worldState.isExitUnlocked) {
+                exitColorUnlocked
+            } else {
+                exitColorLocked
+            }
+            shapeRenderer.rect(exit.position.x, exit.position.y, exit.size.x, exit.size.y)
+        }
+
+        // 10. Finalizar el dibujado de formas
         shapeRenderer.end()
         // Desactivar 'blending'
         Gdx.gl.glDisable(GL20.GL_BLEND)

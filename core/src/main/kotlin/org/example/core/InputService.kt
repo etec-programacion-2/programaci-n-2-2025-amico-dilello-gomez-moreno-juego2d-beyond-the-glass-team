@@ -4,6 +4,10 @@ package org.example.core
  * Interfaz para los servicios de entrada (SOLID: Inversión de Dependencias).
  * Define el "contrato" de CÓMO el 'core' (MiJuego) recibe la entrada.
  * No sabe si la entrada viene de un teclado (GdxInputService) o una consola (CliInputService).
+ *
+ * ---
+ * @see "Issue BTG-002: Diseño de la arquitectura de servicios (DIP)."
+ * ---
  */
 interface InputService {
     /** Inicia el servicio (si es necesario). */

@@ -2,8 +2,12 @@ package org.example.core
 
 /**
  * Enum para abstraer las acciones del jugador de las teclas específicas.
+ *
+ * ---
  * NOTA: Este archivo parece ser una versión antigua o redundante de 'GameAction.kt'.
- * El motor ('MiJuego') utiliza 'GameAction'.
+ * El motor ('MiJuego') y 'GdxInputService' utilizan 'GameAction.kt'.
+ * Este archivo no está siendo utilizado actualmente en la lógica principal.
+ * ---
  */
 enum class PlayerAction {
     MOVE_LEFT,

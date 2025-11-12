@@ -1,0 +1,21 @@
+# Requisito: Solo llegar al final
+
+# Posicion inicial del jugador
+P_START, 50, 50
+
+# Plataformas
+PLATFORM, 0, 0, 400, 50, A
+PLATFORM, 0, 0, 400, 50, B
+PLATFORM, 150, 120, 100, 20, B
+PLATFORM, 300, 200, 100, 20, A
+PLATFORM, 150, 280, 100, 20, B
+PLATFORM, 650, 0, 350, 50, A
+PLATFORM, 650, 0, 350, 50, B
+
+# Coleccionables
+COLLECTIBLE, 180, 150, 15, 15, 1
+COLLECTIBLE, 330, 230, 15, 15, 1
+COLLECTIBLE, 180, 310, 15, 15, 1
+
+# Salida (ya esta desbloqueada, solo hay que llegar)
+EXIT, 750, 50, 30, 60, REACH_EXIT

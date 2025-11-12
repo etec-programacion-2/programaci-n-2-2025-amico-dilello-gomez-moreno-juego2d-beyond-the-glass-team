@@ -1,8 +1,13 @@
 package org.example.core
 
 /**
- * Servicio dedicado exclusivamente a la lógica de combate (SOLID: Principio de Responsabilidad Única).
+ * Servicio dedicado exclusivamente a la lógica de combate
+ * (SOLID: Principio de Responsabilidad Única).
  * Maneja las colisiones de ataque y daño.
+ *
+ * ---
+ * @see "Issue BTG-012: Sistema de Combate y Vidas."
+ * ---
  */
 class CombatService {
 
@@ -24,6 +29,7 @@ class CombatService {
         // Calcula la posición y tamaño del hitbox de ataque
         val hitbox = getAttackHitbox(player)
 
+        // --- Relacionado con BTG-009: Combate consciente de la dimensión ---
         // Filtra enemigos: solo puede golpear a enemigos VIVOS y en la MISMA DIMENSIÓN.
         val attackableEnemies = enemies.filter { it.isAlive && it.dimension == currentDimension }
 
@@ -37,20 +43,20 @@ class CombatService {
     }
 
     /**
-     * Comprueba si el cuerpo del jugador está colisionando con algún enemigo activo.
-     * (Usado para detectar si el jugador recibe daño).
+     * Comprueba si el cuerpo del jugador está colisionando con algún enemigo.
      *
      * @param player El objeto jugador.
-     * @param enemies La lista de todos los enemigos.
-     * @param currentDimension La dimensión actual del juego.
-     * @return 'true' si el jugador está tocando a un enemigo dañino, 'false' en caso contrario.
+     * @param enemies La lista de enemigos.
+     * @param currentDimension La dimensión actual.
+     * @return 'true' si el jugador fue golpeado, 'false' en caso contrario.
      */
-    fun checkEnemyDamage(player: Player, enemies: List<Enemy>, currentDimension: Dimension): Boolean {
-        // Filtra enemigos: solo puede recibir daño de enemigos VIVOS y en la MISMA DIMENSIÓN.
-        val activeEnemies = enemies.filter { it.isAlive && it.dimension == currentDimension }
+    fun checkPlayerDamage(player: Player, enemies: List<Enemy>, currentDimension: Dimension): Boolean {
+        // Filtra enemigos: solo puede ser dañado por enemigos VIVOS y en la MISMA DIMENSIÓN.
+        // --- Relacionado con BTG-009: Combate consciente de la dimensión ---
+        val harmfulEnemies = enemies.filter { it.isAlive && it.dimension == currentDimension }
 
-        for (enemy in activeEnemies) {
-            // Comprueba colisión AABB entre el cuerpo del jugador y el cuerpo del enemigo
+        for (enemy in harmfulEnemies) {
+            // Comprobación de colisión AABB entre el jugador y el cuerpo del enemigo
             if (isAABBColliding(player.position, player.size, enemy.position, enemy.size)) {
                 return true // El jugador ha sido golpeado
             }
@@ -81,6 +87,11 @@ class CombatService {
     /**
      * Comprobación de colisión AABB (Axis-Aligned Bounding Box).
      * Devuelve true si dos rectángulos se superponen.
+     * (POO: Encapsulamiento) Es privado porque solo es útil para este servicio.
+     *
+     * ---
+     * @see "Issue BTG-010: Física y Colisiones."
+     * ---
      */
     private fun isAABBColliding(posA: Vector2D, sizeA: Vector2D, posB: Vector2D, sizeB: Vector2D): Boolean {
         return posA.x < posB.x + sizeB.x &&
