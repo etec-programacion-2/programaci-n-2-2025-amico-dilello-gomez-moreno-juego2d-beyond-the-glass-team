@@ -19,6 +19,12 @@ enum class GameAction {
     SWITCH_DIMENSION,
     ATTACK, // Acción de ataque
     
-    /** (NUEVO) Acción para salir del juego (ej. con la tecla ESC). */
-    QUIT
+    /** * Acción para salir del juego (ej. con la tecla ESC) o
+     * para manejar el botón "Salir" del menú.
+     * (MODIFICADO) Su significado ahora depende del estado (ej. "Volver al Menú").
+     */
+    QUIT,
+    
+    /** (NUEVO) Acción para iniciar el juego desde el menú (ej. clic en "Jugar"). */
+    START_GAME
 }

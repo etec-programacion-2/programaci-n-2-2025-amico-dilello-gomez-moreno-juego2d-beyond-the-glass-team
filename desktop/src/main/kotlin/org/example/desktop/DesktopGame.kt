@@ -10,13 +10,20 @@ import org.example.core.GameAction
 import org.example.core.GameLogicService
 import org.example.core.GameState
 import org.example.core.MiJuego
-import com.badlogic.gdx.graphics.Color // --- ERROR SOLUCIONADO --- (Esta es la línea que faltaba)
-import com.badlogic.gdx.graphics.Texture // --- (NUEVO) IMPORT PARA EL FILTRO DE TEXTURA ---
+import com.badlogic.gdx.graphics.Color
+import com.badlogic.gdx.graphics.Texture
+import com.badlogic.gdx.math.Rectangle // (NUEVO) Import para los botones
+import com.badlogic.gdx.math.Vector3 // (NUEVO) Import para coordenadas del mouse
 
 /**
- * Clase principal del módulo 'desktop'. Es el 'ApplicationAdapter' de LibGDX.
- * Actúa como el "puente" entre LibGDX y el 'core' (MiJuego).
- * Gestiona el bucle de renderizado de LibGDX.
+ * (MUY MODIFICADO)
+ * Clase principal del módulo 'desktop'.
+ * Ahora actúa como un "Gestor de Escenas" o "Gestor de UI".
+ *
+ * (SOLID: S) Su responsabilidad es:
+ * 1. Gestionar la lógica de entrada (teclado Y MOUSE).
+ * 2. Dibujar la UI correcta para el estado actual (Menú, Juego, Game Over).
+ * 3. Delegar el dibujado del *mundo del juego* a 'renderService'.
  *
  * ---
  * @see "Issue BTG-001: Módulo 'desktop'."
@@ -27,101 +34,124 @@ import com.badlogic.gdx.graphics.Texture // --- (NUEVO) IMPORT PARA EL FILTRO DE
 class DesktopGame : ApplicationAdapter() {
     
     // --- Dependencias del Core ---
-    // (SOLID: D) Dependemos de la ABSTRACCIÓN 'GameLogicService', no de 'MiJuego'.
     private lateinit var juego: GameLogicService 
-    private lateinit var renderService: GdxRenderService // Implementación concreta de renderizado
-    private lateinit var inputService: GdxInputService // Implementación concreta de entrada
+    private lateinit var renderService: GdxRenderService
+    private lateinit var inputService: GdxInputService
 
     // --- Objetos de LibGDX ---
-    private lateinit var shapeRenderer: ShapeRenderer // Para dibujar formas (jugador, plataformas)
-    private lateinit var batch: SpriteBatch // Para dibujar texto (UI)
-    private lateinit var font: BitmapFont // Para la fuente del texto
-    
-    // --- Relacionado con BTG-013: Fuente para habilidad ---
+    private lateinit var shapeRenderer: ShapeRenderer
+    private lateinit var batch: SpriteBatch
+    private lateinit var font: BitmapFont
     private lateinit var abilityFont: BitmapFont
-    
-    // (NUEVO) Fuente para las pantallas de estado
     private lateinit var titleFont: BitmapFont
+    
+    // --- (NUEVO) Fuentes del Menú ---
+    private lateinit var megaTitleFont: BitmapFont // Para el título del juego
+    private lateinit var buttonFont: BitmapFont // Para los botones
+    
+    // --- (NUEVO) Lógica del Menú ---
+    private lateinit var jugarButtonRect: Rectangle
+    private lateinit var salirButtonRect: Rectangle
+    private var mousePos: Vector3 = Vector3() // Para guardar coordenadas del mouse
 
     /**
-     * Método 'create' de LibGDX. Se llama una vez al iniciar.
-     * Aquí se inicializan todos los objetos.
+     * Método 'create' de LibGDX.
+     * (MODIFICADO) Ahora inicializa las fuentes y los botones del menú.
      */
     override fun create() {
         // --- Inicialización de objetos LibGDX ---
         shapeRenderer = ShapeRenderer()
         batch = SpriteBatch()
         
-        // --- (CAMBIO) Arreglo de fuente pixelada ---
-        // Al crear un BitmapFont por defecto, le decimos que use
-        // filtros "Linear" (suavizado) en lugar de "Nearest" (pixelado)
-        // al escalar la textura de la fuente.
-        
+        // --- Fuentes del Juego ---
         font = BitmapFont()
         font.region.texture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear)
         
-        // (NUEVO) Fuente más grande para títulos
         titleFont = BitmapFont()
-        titleFont.data.setScale(2.0f) // Hace la fuente 2x más grande
-        titleFont.region.texture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear) // Aplica filtro
+        titleFont.data.setScale(2.0f)
+        titleFont.region.texture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear)
         
-        // --- Relacionado con BTG-013: Fuente especial para habilidad ---
         abilityFont = BitmapFont()
-        abilityFont.color = Color.CYAN // Color distintivo para la habilidad
-        abilityFont.region.texture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear) // Aplica filtro
-
-        // --- Inyección de Dependencias (Manual) ---
+        abilityFont.color = Color.CYAN
+        abilityFont.region.texture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear)
         
-        // 1. Crear los servicios concretos de 'desktop'
+        // --- (NUEVO) Fuentes del Menú ---
+        megaTitleFont = BitmapFont()
+        megaTitleFont.data.setScale(3.5f) // Fuente bien grande
+        megaTitleFont.region.texture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear)
+        megaTitleFont.color = Color.WHITE
+
+        buttonFont = BitmapFont()
+        buttonFont.data.setScale(2.0f)
+        buttonFont.region.texture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear)
+
+        // --- (NUEVO) Definición de los botones (Rectangles) ---
+        // (x, y, ancho, alto)
+        // Colocados en el centro de la pantalla (800x600)
+        jugarButtonRect = Rectangle(300f, 300f, 200f, 50f)
+        salirButtonRect = Rectangle(300f, 200f, 200f, 50f)
+
+        // --- Inyección de Dependencias ---
         renderService = GdxRenderService(shapeRenderer)
         inputService = GdxInputService()
 
         // 2. Crear la instancia del 'core'
-        // (SOLID: D) DesktopGame solo conoce la interfaz GameLogicService
         juego = MiJuego() 
         
-        // 3. Iniciar servicios del 'core' (aunque MiJuego los crea internamente ahora)
-        // (En una implementación ideal, 'MiJuego' recibiría 'renderService' e 'inputService' en su constructor)
-        inputService.start()
-
-        // 4. Cargar el nivel (NUEVO: ahora empieza desde level1)
-        // --- Relacionado con BTG-007: Carga de nivel ---
-        juego.loadLevel("level1.txt")
+        // (MODIFICADO) YA NO SE LLAMA A 'juego.loadLevel()'.
+        // El juego ahora empieza en el estado 'Menu' por defecto.
     }
 
     /**
-     * Método 'render' de LibGDX. Es el bucle principal del juego.
-     * Se llama en cada fotograma.
+     * Método 'render' de LibGDX. Es el bucle principal.
+     * (MODIFICADO) Ahora gestiona la Máquina de Estados.
      */
     override fun render() {
-        // --- Lógica del bucle de juego (Issue BTG-008) ---
-
-        // 1. Obtener el tiempo delta (tiempo desde el último fotograma)
+        // 1. Obtener el tiempo delta
         val deltaTime = Gdx.graphics.deltaTime
 
-        // 2. Obtener acciones del usuario
-        // (SOLID: D) 'juego' no sabe de LibGDX, solo recibe GameActions abstractas.
-        val actions = inputService.getActions()
+        // 2. (NUEVO) Gestión de Entrada Dependiente del Estado
+        // (SOLID: S) DesktopGame es responsable de la entrada de la UI (mouse)
+        // e 'inputService' es responsable de la entrada del juego (teclado).
+        
+        val gameState = juego.getGameState()
+        val actions: Set<GameAction>
 
-        // 3. (NUEVO) Manejo de la acción de SALIR
-        // (SOLID: D) Solo el 'desktop' sabe CÓMO salir (Gdx.app.exit).
-        // El 'core' solo emitió la acción abstracta 'QUIT'.
-        if (GameAction.QUIT in actions) {
+        if (gameState == GameState.Menu) {
+            // Si estamos en el menú, usamos nuestro propio gestor de entrada (mouse)
+            actions = handleMenuInput()
+        } else {
+            // Si estamos jugando, Game Over, etc., usamos el servicio normal (teclado)
+            actions = inputService.getActions()
+        }
+
+        // 3. (NUEVO) Manejo de 'QUIT' (ESC)
+        // Esta es la única acción que 'DesktopGame' maneja directamente.
+        // Si el usuario presiona 'QUIT' (ESC) Y estamos en el menú,
+        // la aplicación debe cerrarse.
+        // Si estamos en el juego, 'MiJuego' lo manejará (y volverá al menú).
+        if (gameState == GameState.Menu && GameAction.QUIT in actions) {
             Gdx.app.exit()
             return
         }
 
         // 4. Actualizar el motor del juego (lógica del 'core')
+        // Le pasamos las acciones (sean del mouse o del teclado)
         juego.update(actions, deltaTime)
 
         // 5. Obtener el estado del mundo (snapshot de datos)
-        // (SOLID: D, POO: Encapsulamiento) No vemos la lógica interna, solo el estado.
         val worldState = juego.getWorldState()
 
-        // 6. Renderizar el estado del mundo (si estamos jugando)
-        // (SOLID: S) Delegamos el dibujado al servicio de renderizado.
+        // 6. (MODIFICADO) Renderizar el mundo del juego
+        // (SOLID: S) Solo dibujamos el mundo si estamos en 'Playing'.
+        // En 'Menu', 'GameOver', etc., solo limpiamos la pantalla.
         if (juego.getGameState() == GameState.Playing) {
             renderService.renderWorld(worldState)
+        } else {
+            // Si no estamos jugando, solo limpiamos la pantalla
+            // (El 'renderService' ya no lo hace por nosotros)
+            Gdx.gl.glClearColor(0.1f, 0.1f, 0.1f, 1f)
+            Gdx.gl.glClear(com.badlogic.gdx.graphics.GL20.GL_COLOR_BUFFER_BIT)
         }
 
         // 7. Dibujar la UI (texto)
@@ -131,48 +161,74 @@ class DesktopGame : ApplicationAdapter() {
         // (NUEVO) Máquina de estados para la UI
         when (juego.getGameState()) {
             
+            GameState.Menu -> {
+                // --- DIBUJAR EL MENÚ PRINCIPAL ---
+                
+                // Título
+                megaTitleFont.draw(batch, "Beyond The Glass", 180f, 500f)
+                
+                // Botones (Texto)
+                // Comprueba si el mouse está sobre el botón para resaltarlo
+                val mouseX = mousePos.x
+                val mouseY = mousePos.y
+                
+                // Botón Jugar
+                if (jugarButtonRect.contains(mouseX, mouseY)) {
+                    buttonFont.color = Color.YELLOW // Resaltado
+                } else {
+                    buttonFont.color = Color.WHITE
+                }
+                buttonFont.draw(batch, "Jugar", jugarButtonRect.x + 60f, jugarButtonRect.y + 35f)
+                
+                // Botón Salir
+                if (salirButtonRect.contains(mouseX, mouseY)) {
+                    buttonFont.color = Color.YELLOW // Resaltado
+                } else {
+                    buttonFont.color = Color.WHITE
+                }
+                buttonFont.draw(batch, "Salir", salirButtonRect.x + 60f, salirButtonRect.y + 35f)
+            }
+            
             GameState.Playing -> {
-                // Información de estado general
+                // --- DIBUJAR LA UI DEL JUEGO (como antes) ---
                 font.color = Color.WHITE
                 font.draw(batch, "Dimensión Actual: ${worldState.currentDimension}", 10f, 580f)
                 font.draw(batch, juego.getGameInfo(), 10f, 560f)
-                
-                // --- Relacionado con BTG-012: UI de Vidas ---
                 font.draw(batch, "Vidas: ${juego.getLives()}", 10f, 540f)
 
-                // --- Relacionado con BTG-013: UI de Coleccionables y Habilidades ---
                 val player = juego.getPlayer()
-                // Muestra contador de fragmentos
                 font.draw(batch, "Fragmentos: ${player.energyFragments} / 3", 10f, 520f)
                 
-                // Muestra si la habilidad está desbloqueada
                 if (player.canDoubleJump) {
                     abilityFont.draw(batch, "¡DOBLE SALTO DESBLOQUEADO!", 10f, 500f)
                 }
             }
             
             GameState.GameOver -> {
-                // --- Relacionado con BTG-012: UI de Game Over ---
-                // (Corregido) titleFont y font ahora usan filtro Linear
+                // --- DIBUJAR PANTALLA GAME OVER (MODIFICADA) ---
                 titleFont.color = Color.RED
                 titleFont.draw(batch, "GAME OVER", 280f, 350f)
                 font.color = Color.WHITE
-                font.draw(batch, "Presiona SHIFT para reiniciar (desde Nivel 1)", 240f, 300f)
-                font.draw(batch, "Presiona ESC para salir", 290f, 270f)
+                
+                // (MODIFICADO) El texto ahora dice "volver al menú"
+                font.draw(batch, "Presiona SHIFT para volver al menú", 240f, 300f)
+                font.draw(batch, "Presiona ESC para volver al menú", 290f, 270f)
             }
             
             is GameState.GameWon -> {
-                // --- (NUEVO) UI de Juego Ganado ---
-                // (Corregido) titleFont y font ahora usan filtro Linear
+                // --- DIBUJAR PANTALLA VICTORIA (MODIFICADA) ---
                 titleFont.color = Color.CYAN
                 titleFont.draw(batch, "¡HAS GANADO!", 270f, 350f)
                 font.color = Color.WHITE
                 font.draw(batch, "¡Completaste todos los niveles!", 270f, 300f)
-                font.draw(batch, "Presiona ESC para salir", 290f, 270f)
+                
+                // (MODIFICADO) El texto ahora dice "volver al menú"
+                font.draw(batch, "Presiona SHIFT para volver al menú", 240f, 270f)
+                font.draw(batch, "Presiona ESC para volver al menú", 290f, 240f)
             }
             
             else -> {
-                 // No dibujar nada para 'Menu' o 'Paused' (aún no implementados)
+                 // No dibujar nada para 'Paused'
             }
         }
         
@@ -180,14 +236,60 @@ class DesktopGame : ApplicationAdapter() {
     }
 
     /**
+     * (NUEVO) Gestor de entrada DEL MENÚ.
+     * Esta función es llamada por 'render' SOLO si el estado es 'Menu'.
+     * Comprueba las teclas Y el mouse.
+     *
+     * @return Un Set de GameActions para enviar a 'MiJuego.update()'.
+     */
+    private fun handleMenuInput(): Set<GameAction> {
+        // 1. Comprobar la entrada del teclado (para la tecla ESC)
+        if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
+            // El usuario presionó ESC en el menú
+            return setOf(GameAction.QUIT)
+        }
+        
+        // 2. Comprobar la entrada del mouse (para los botones)
+        
+        // Actualizar la posición del mouse (con la Y invertida)
+        // 'unproject' traduce las coordenadas de la pantalla (pixeles)
+        // a las coordenadas del mundo/cámara (que en nuestro caso son las mismas)
+        mousePos.set(Gdx.input.x.toFloat(), Gdx.input.y.toFloat(), 0f)
+        // (Esto es necesario si la cámara se mueve, pero es buena práctica)
+        // batch.projectionMatrix la usa para saber cómo traducir
+        // ...pero para UI simple, podemos solo invertir Y:
+        val mouseY = Gdx.graphics.height - Gdx.input.y.toFloat()
+        mousePos.set(Gdx.input.x.toFloat(), mouseY, 0f)
+
+        // Comprobar si se acaba de hacer clic
+        if (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) {
+            
+            // ¿Clic en "Jugar"?
+            if (jugarButtonRect.contains(mousePos.x, mousePos.y)) {
+                return setOf(GameAction.START_GAME) // Envía la acción al 'core'
+            }
+            
+            // ¿Clic en "Salir"?
+            if (salirButtonRect.contains(mousePos.x, mousePos.y)) {
+                return setOf(GameAction.QUIT) // Envía la acción (DesktopGame la interceptará)
+            }
+        }
+        
+        // No se hizo clic en nada
+        return emptySet()
+    }
+
+    /**
      * Se llama al cerrar la aplicación. Libera recursos.
      */
     override fun dispose() {
-        inputService.stop()
+        // (MODIFICADO) Añadidas las nuevas fuentes
         shapeRenderer.dispose()
         batch.dispose()
         font.dispose()
         abilityFont.dispose()
-        titleFont.dispose() // (NUEVO)
+        titleFont.dispose()
+        megaTitleFont.dispose()
+        buttonFont.dispose()
     }
 }

@@ -6,12 +6,12 @@ import org.example.core.GameAction
 import org.example.core.InputService
 
 /**
- * Implementación CONCRETA de la interfaz 'InputService' (del 'core')
- * usando la biblioteca LibGDX.
+ * (MODIFICADO) ESTE ARCHIVO NO SE CAMBIA.
+ * Sigue funcionando exactamente igual.
+ * La tecla ESC sigue mapeada a 'GameAction.QUIT'.
  *
- * (SOLID: D) Es la implementación que cumple el contrato de 'InputService'.
- * Su trabajo es TRADUCIR las teclas físicas de LibGDX (ej. Input.Keys.W)
- * en ACCIONES abstractas del juego (ej. GameAction.JUMP).
+ * El 'core' (MiJuego) y el 'desktop' (DesktopGame) decidirán
+ * qué hacer con esa acción 'QUIT' dependiendo del estado del juego.
  *
  * ---
  * @see "Issue BTG-002: Diseño de la arquitectura de servicios (InputService)."
@@ -59,7 +59,7 @@ class GdxInputService : InputService {
             actions.add(GameAction.ATTACK)
         }
 
-        // --- (NUEVO) Acción de Salir ---
+        // --- (MODIFICADO) Acción de Salir / Volver al Menú ---
         // Salir: ESC
         if (Gdx.input.isKeyPressed(Input.Keys.ESCAPE)) {
             actions.add(GameAction.QUIT)
