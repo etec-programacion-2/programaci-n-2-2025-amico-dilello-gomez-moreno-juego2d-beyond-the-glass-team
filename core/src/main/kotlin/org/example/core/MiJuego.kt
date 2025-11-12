@@ -229,6 +229,9 @@ class MiJuego : GameLogicService {
         if (invincibilidadTimer <= 0f) {
             if (combatService.checkPlayerDamage(player, allEnemies, currentDimension)) {
                 handlePlayerHit()
+                // Salir temprano si el jugador fue golpeado
+                // para evitar múltiples fuentes de daño en un fotograma.
+                return
             }
         }
 
@@ -240,6 +243,20 @@ class MiJuego : GameLogicService {
             
             // --- Notificar al Patrón Observador (BTG-013) ---
             subject.notify(PlayerEvent.ENERGY_COLLECTED)
+        }
+        
+        // --- NUEVA LÓGICA: Comprobar si el jugador se cae del mundo ---
+        // (Solo si no es invencible, para evitar bucles de muerte)
+        if (invincibilidadTimer <= 0f) {
+            // Definimos un "límite de caída" (ej. -100 píxeles)
+            // (El piso está en y=0, así que -100 es un margen seguro)
+            val deathPlaneY = -100f
+            if (player.position.y < deathPlaneY) {
+                println("¡Caída fuera del mundo! Recibiendo daño.")
+                // Reutiliza la misma lógica de "recibir daño" y respawnear
+                handlePlayerHit()
+                return // Salir para no procesar más daño este fotograma
+            }
         }
     }
 
